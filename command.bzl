@@ -6,6 +6,15 @@ multirun definition
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//internal:constants.bzl", "RUNFILES_PREFIX")
 
+def _force_opt_impl(_settings, _attr):
+    return {"//command_line_option:compilation_mode": "opt"}
+
+_force_opt = transition(
+    implementation = _force_opt_impl,
+    inputs = [],
+    outputs = ["//command_line_option:compilation_mode"],
+)
+
 def _command_impl(ctx):
     runfiles = ctx.runfiles().merge(ctx.attr._bash_runfiles[DefaultInfo].default_runfiles)
 
@@ -14,7 +23,7 @@ def _command_impl(ctx):
         if default_runfiles != None:
             runfiles = runfiles.merge(default_runfiles)
 
-    default_info = ctx.attr.command[DefaultInfo]
+    default_info = ctx.attr.command[0][DefaultInfo]
     executable = default_info.files_to_run.executable
 
     default_runfiles = default_info.default_runfiles
@@ -65,10 +74,13 @@ command = rule(
             allow_files = True,
             executable = True,
             doc = "Target to run",
-            cfg = "target",
+            cfg = _force_opt,
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
+        ),
+        "_allowlist_function_transition": attr.label(
+            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
         ),
     },
     executable = True,
