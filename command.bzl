@@ -14,9 +14,16 @@ def _command_impl(ctx):
         if default_runfiles != None:
             runfiles = runfiles.merge(default_runfiles)
 
-    default_info = ctx.attr.command[DefaultInfo]
-    executable = default_info.files_to_run.executable
+    if ctx.attr.command and ctx.attr.exec_command:
+        fail("Only one of command or exec_command can be set")
+    elif ctx.attr.command:
+        default_info = ctx.attr.command[DefaultInfo]
+    elif ctx.attr.exec_command:
+        default_info = ctx.attr.exec_command[DefaultInfo]
+    else:
+        fail("One of command or exec_command must be set")
 
+    executable = default_info.files_to_run.executable
     default_runfiles = default_info.default_runfiles
     if default_runfiles != None:
         runfiles = runfiles.merge(default_runfiles)
@@ -61,11 +68,16 @@ command = rule(
             doc = "Dictionary of environment variables. Subject to $(location) expansion. See https://docs.bazel.build/versions/master/skylark/lib/ctx.html#expand_location",
         ),
         "command": attr.label(
-            mandatory = True,
             allow_files = True,
             executable = True,
-            doc = "Target to run",
+            doc = "Command to run, using the target configuration, only one of this or exec_command can be set",
             cfg = "target",
+        ),
+        "exec_command": attr.label(
+            allow_files = True,
+            executable = True,
+            doc = "Command to run, forcing the execution configuration, only one of this or command can be set",
+            cfg = "exec",
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
