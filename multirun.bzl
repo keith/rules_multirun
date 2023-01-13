@@ -7,7 +7,6 @@ in a single invocation.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//internal:constants.bzl", "RUNFILES_PREFIX")
 
-
 def _multirun_impl(ctx):
     instructions_file = ctx.actions.declare_file(ctx.label.name + ".json")
     runner_info = ctx.attr._runner[DefaultInfo]
@@ -103,7 +102,7 @@ multirun = rule(
         ),
         "_runner": attr.label(
             default = Label("//internal:multirun"),
-            cfg = "host",
+            cfg = "exec",
             executable = True,
         ),
     },
