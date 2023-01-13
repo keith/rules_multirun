@@ -1,0 +1,32 @@
+name: CI
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Every day at 11:03 UTC.
+    - cron: '3 11 * * *'
+
+jobs:
+  macos_test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: bazelisk test //...
+      - run: USE_BAZEL_VERSION=rolling bazelisk test //...
+      - run: USE_BAZEL_VERSION=last_green bazelisk test //...
+      - run: bazelisk test //... --enable_bzlmod
+      - run: USE_BAZEL_VERSION=rolling bazelisk test //... --enable_bzlmod
+      - run: USE_BAZEL_VERSION=last_green bazelisk test //... --enable_bzlmod
+
+  ubuntu_test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: bazelisk test //...
+      - run: USE_BAZEL_VERSION=rolling bazelisk test //...
+      - run: USE_BAZEL_VERSION=last_green bazelisk test //...
+      - run: bazelisk test //... --enable_bzlmod
+      - run: USE_BAZEL_VERSION=rolling bazelisk test //... --enable_bzlmod
+      - run: USE_BAZEL_VERSION=last_green bazelisk test //... --enable_bzlmod
