@@ -1,3 +1,6 @@
+# Speed up macOS CI since we don't need C++
+common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
 build --remote_cache=grpcs://remote.buildbuddy.io
 build --remote_timeout=3600
 
