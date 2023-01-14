@@ -34,7 +34,7 @@ if [[ -n "$parallel_output" ]]; then
 fi
 
 script=$(rlocation rules_multirun/tests/multirun_serial.bash)
-serial_output=$($script | sed 's/@@/@/g')
+serial_output=$($script | sed 's=@[^/]*/=@/=g')
 if [[ "$serial_output" != "Running @//tests:validate_args_cmd
 Running @//tests:validate_env_cmd" ]]; then
   echo "Expected labeled output, got '$serial_output'"
