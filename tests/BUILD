@@ -69,4 +69,5 @@ sh_test(
         ":validate_args_cmd",
         ":validate_env_cmd",
     ],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
 )
