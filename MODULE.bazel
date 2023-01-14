@@ -1,6 +1,6 @@
 module(
     name = "rules_multirun",
-    version = "0.3.0",
+    version = "0.3.1",
     compatibility_level = 1,
 )
 
