@@ -29,9 +29,7 @@ sh_binary(
 
 command(
     name = "validate_chdir_location_cmd",
-    # Note, from Bazel 6.1.0 upwards this can be replaced by $(rlocationpath ...).
-    # See https://github.com/bazelbuild/bazel/pull/16653.
-    arguments = ["rules_multirun/$(rootpath :hello)"],
+    arguments = ["$(rlocationpath :hello)"],
     command = "validate_chdir_location",
     data = [":hello"],
 )
