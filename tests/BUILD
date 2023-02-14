@@ -22,6 +22,21 @@ command(
 )
 
 sh_binary(
+    name = "validate_chdir_location",
+    srcs = ["validate-chdir-location.sh"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+)
+
+command(
+    name = "validate_chdir_location_cmd",
+    # Note, from Bazel 6.1.0 upwards this can be replaced by $(rlocationpath ...).
+    # See https://github.com/bazelbuild/bazel/pull/16653.
+    arguments = ["rules_multirun/$(rootpath :hello)"],
+    command = "validate_chdir_location",
+    data = [":hello"],
+)
+
+sh_binary(
     name = "validate_env",
     srcs = ["validate-env.sh"],
 )
@@ -67,6 +82,7 @@ sh_test(
         ":multirun_serial",
         ":multirun_serial_no_print",
         ":validate_args_cmd",
+        ":validate_chdir_location_cmd",
         ":validate_env_cmd",
     ],
     deps = ["@bazel_tools//tools/bash/runfiles"],
