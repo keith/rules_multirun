@@ -23,6 +23,8 @@ fi
 
 script=$(rlocation rules_multirun/tests/validate_args_cmd.bash)
 $script
+script=$(rlocation rules_multirun/tests/validate_chdir_location_cmd.bash)
+$script
 script=$(rlocation rules_multirun/tests/validate_env_cmd.bash)
 $script
 
