@@ -71,11 +71,35 @@ multirun(
     print_command = False,
 )
 
+sh_binary(
+    name = "validate_binary_args",
+    args = ["foo"],
+    srcs = ["validate-args.sh"],
+)
+
+multirun(
+    name = "multirun_binary_args",
+    commands = [":validate_binary_args"],
+)
+
+sh_binary(
+    name = "validate_binary_env",
+    env = {"FOO_ENV": "foo"},
+    srcs = ["validate-env.sh"],
+)
+
+multirun(
+    name = "multirun_binary_env",
+    commands = [":validate_binary_env"],
+)
+
 sh_test(
     name = "test",
     srcs = ["test.sh"],
     data = [
         ":hello",
+        ":multirun_binary_args",
+        ":multirun_binary_env",
         ":multirun_parallel",
         ":multirun_serial",
         ":multirun_serial_no_print",

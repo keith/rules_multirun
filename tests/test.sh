@@ -28,6 +28,11 @@ $script
 script=$(rlocation rules_multirun/tests/validate_env_cmd.bash)
 $script
 
+script=$(rlocation rules_multirun/tests/multirun_binary_args.bash)
+$script
+script=$(rlocation rules_multirun/tests/multirun_binary_env.bash)
+$script
+
 script="$(rlocation rules_multirun/tests/multirun_parallel.bash)"
 parallel_output="$($script)"
 if [[ -n "$parallel_output" ]]; then
