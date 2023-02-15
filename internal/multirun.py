@@ -1,16 +1,29 @@
 import json
+import os
 import subprocess
 import sys
-from typing import List, NamedTuple
+from typing import Dict, List, NamedTuple
 
 
 class Command(NamedTuple):
     path: str
     tag: str
+    args: List[str]
+    env: Dict[str, str]
+
+
+def _run_command(command: Command, block: bool):
+    args = [command.path] + command.args
+    env = dict(os.environ)
+    env.update(command.env)
+    if block:
+        return subprocess.check_call(args, env=env)
+    else:
+        return subprocess.Popen(args, env=env)
 
 
 def _perform_concurrently(commands: List[Command]) -> bool:
-    processes = [subprocess.Popen(command.path) for command in commands]
+    processes = [_run_command(command, block=False) for command in commands]
     success = True
     for process in processes:
         process.wait()
@@ -26,7 +39,7 @@ def _perform_serially(commands: List[Command], print_command: bool) -> bool:
             print(f"Running {command.tag}")
 
         try:
-            subprocess.check_call(command.path)
+            _run_command(command, block=True)
         except subprocess.CalledProcessError:
             return False
 
@@ -38,7 +51,8 @@ def _main(path: str) -> None:
         instructions = json.load(f)
 
     commands = [
-        Command(blob["path"], blob["tag"]) for blob in instructions["commands"]
+        Command(blob["path"], blob["tag"], blob["args"], blob["env"])
+        for blob in instructions["commands"]
     ]
     parallel = instructions["jobs"] == 0
     if parallel:
