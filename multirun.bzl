@@ -18,6 +18,16 @@ def _binary_args_env_aspect_impl(target, ctx):
     env = getattr(ctx.rule.attr, "env", {})
 
     if is_executable and (args or env):
+        expansion_targets = getattr(ctx.rule.attr, "data")
+        if expansion_targets:
+            args = [
+                ctx.expand_location(arg, expansion_targets)
+                for arg in args
+            ]
+            env = {
+                name: ctx.expand_location(val, expansion_targets)
+                for name, val in env.items()
+            }
         return [_BinaryArgsEnvInfo(args = args, env = env)]
 
     return []
