@@ -113,15 +113,14 @@ def _multirun_impl(ctx):
         ),
     ]
 
-multirun = rule(
-    implementation = _multirun_impl,
+def multirun_with_transition(cfg, allowlist = None):
     attrs = {
         "commands": attr.label_list(
             mandatory = False,
             allow_files = True,
             aspects = [_binary_args_env_aspect],
             doc = "Targets to run",
-            cfg = "target",
+            cfg = cfg,
         ),
         "data": attr.label_list(
             doc = "The list of files needed by the commands at runtime. See general comments about `data` at https://docs.bazel.build/versions/master/be/common-definitions.html#common-attributes",
@@ -143,6 +142,15 @@ multirun = rule(
             cfg = "exec",
             executable = True,
         ),
-    },
-    executable = True,
-)
+    }
+
+    if allowlist:
+        attrs["_allowlist_function_transition"] = attr.label(default = allowlist)
+
+    return rule(
+        implementation = _multirun_impl,
+        attrs = attrs,
+        executable = True,
+    )
+
+multirun = multirun_with_transition("target")

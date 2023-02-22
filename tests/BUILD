@@ -1,4 +1,5 @@
 load("//:defs.bzl", "command", "multirun")
+load(":transitions.bzl", "multirun_lambda")
 
 sh_binary(
     name = "echo_hello",
@@ -93,6 +94,20 @@ multirun(
     commands = [":validate_binary_env"],
 )
 
+platform(
+    name = "lambda",
+    constraint_values = [
+    ],
+)
+
+multirun_lambda(
+    name = "multirun_with_transition",
+    commands = [
+        ":validate_env_cmd",
+        ":validate_args_cmd",
+    ],
+)
+
 sh_binary(
     name = "validate_binary_args_location",
     args = ["$(rlocationpath :hello)"],
@@ -116,6 +131,7 @@ sh_test(
         ":multirun_parallel",
         ":multirun_serial",
         ":multirun_serial_no_print",
+        ":multirun_with_transition",
         ":validate_args_cmd",
         ":validate_chdir_location_cmd",
         ":validate_env_cmd",

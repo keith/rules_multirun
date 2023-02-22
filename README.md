@@ -50,6 +50,38 @@ Run the `multirun` target with bazel:
 $ bazel run //:lint
 ```
 
+## Usage with platform transitions
+
+In case if the `multirun` rule requires a transition to other configuration than `target` then
+a new `multirun`-like rule can be defined as in the following example
+```bzl
+load("@rules_multirun//:defs.bzl", "multirun_with_transition")
+
+def _aws_deploy_platforms_impl(settings, attr):
+    return {"//command_line_option:platforms": [":aws_lambda"]}
+
+aws_deploy_transition = transition(
+    implementation = _aws_deploy_platforms_impl,
+    inputs = [],
+    outputs = ["//command_line_option:platforms"],
+)
+
+aws_deploy = multirun_with_transition(
+    aws_deploy_transition,
+    "@bazel_tools//tools/allowlists/function_transition_allowlist"
+)
+```
+and used in a `BUILD` file
+```bzl
+aws_deploy(
+    name = "staging",
+    commands = [
+       ...
+    ]
+)
+```
+
+
 ## Installation
 
 Go to the [releases
