@@ -7,6 +7,35 @@ in a single invocation.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//internal:constants.bzl", "RUNFILES_PREFIX")
 
+_BinaryArgsEnvInfo = provider(fields = ["args", "env"])
+
+def _binary_args_env_aspect_impl(target, ctx):
+    if _BinaryArgsEnvInfo in target:
+        return []
+
+    is_executable = target.files_to_run != None and target.files_to_run.executable != None
+    args = getattr(ctx.rule.attr, "args", [])
+    env = getattr(ctx.rule.attr, "env", {})
+
+    if is_executable and (args or env):
+        expansion_targets = getattr(ctx.rule.attr, "data")
+        if expansion_targets:
+            args = [
+                ctx.expand_location(arg, expansion_targets)
+                for arg in args
+            ]
+            env = {
+                name: ctx.expand_location(val, expansion_targets)
+                for name, val in env.items()
+            }
+        return [_BinaryArgsEnvInfo(args = args, env = env)]
+
+    return []
+
+_binary_args_env_aspect = aspect(
+    implementation = _binary_args_env_aspect_impl,
+)
+
 def _multirun_impl(ctx):
     instructions_file = ctx.actions.declare_file(ctx.label.name + ".json")
     runner_info = ctx.attr._runner[DefaultInfo]
@@ -39,12 +68,20 @@ def _multirun_impl(ctx):
             fail("%s does not have an executable file" % command.label, attr = "commands")
         runfiles_files.append(exe)
 
+        args = []
+        env = {}
+        if _BinaryArgsEnvInfo in command:
+            args = command[_BinaryArgsEnvInfo].args
+            env = command[_BinaryArgsEnvInfo].env
+
         default_runfiles = default_info.default_runfiles
         if default_runfiles != None:
             runfiles = runfiles.merge(default_runfiles)
         commands.append(struct(
             tag = tag,
             path = exe.short_path,
+            args = args,
+            env = env,
         ))
 
     if ctx.attr.jobs < 0:
@@ -82,6 +119,7 @@ multirun = rule(
         "commands": attr.label_list(
             mandatory = False,
             allow_files = True,
+            aspects = [_binary_args_env_aspect],
             doc = "Targets to run",
             cfg = "target",
         ),
