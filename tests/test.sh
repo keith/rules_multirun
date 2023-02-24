@@ -56,3 +56,11 @@ if [[ -n "$serial_no_output" ]]; then
   echo "Expected no output, got '$serial_no_output'"
   exit 1
 fi
+
+script=$(rlocation rules_multirun/tests/multirun_with_transition.bash)
+serial_with_transition_output=$($script | sed 's=@[^/]*/=@/=g')
+if [[ "$serial_with_transition_output" != "Running @//tests:validate_env_cmd
+Running @//tests:validate_args_cmd" ]]; then
+  echo "Expected labeled output, got '$serial_with_transition_output'"
+  exit 1
+fi
