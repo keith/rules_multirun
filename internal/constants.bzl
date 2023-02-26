@@ -19,3 +19,23 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \\
 runfiles_export_envvars
 
 """
+
+def update_attrs(attrs, cfg, allowlist):
+    """Conditionally update attributes.
+
+    Arguments:
+        attrs: Attributes dictionary.
+        cfg: The command configuration.
+        allowlist: Optional allow list label that will be applied to the configuration transition.
+    Returns:
+        Updated attributes dictionary.
+    """
+    if type(cfg) == "transition":
+        # Configurations declared as StarlarkDefinedConfigTransition instances
+        # (https://github.com/bazelbuild/bazel/blob/e2189245/src/main/java/com/google/devtools/build/lib/analysis/starlark/StarlarkRuleClassFunctions.java#L443)
+        # require a "_allowlist_function_transition" attribute in the rule definition at
+        # https://github.com/bazelbuild/bazel/blob/e2189245/src/main/java/com/google/devtools/build/lib/analysis/starlark/StarlarkRuleClassFunctions.java#L924-L933
+        # Set the provided allow list label or default one .
+        attrs["_allowlist_function_transition"] = attr.label(default = allowlist or "@bazel_tools//tools/allowlists/function_transition_allowlist")
+
+    return attrs

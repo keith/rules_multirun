@@ -4,7 +4,7 @@ multirun definition
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//internal:constants.bzl", "RUNFILES_PREFIX")
+load("//internal:constants.bzl", "RUNFILES_PREFIX", "update_attrs")
 
 def _force_opt_impl(_settings, _attr):
     return {"//command_line_option:compilation_mode": "opt"}
@@ -33,7 +33,8 @@ def _command_impl(ctx):
         if default_runfiles != None:
             runfiles = runfiles.merge(default_runfiles)
 
-    default_info = ctx.attr.command[0][DefaultInfo]
+    command = ctx.attr.command if type(ctx.attr.command) == "Target" else ctx.attr.command[0]
+    default_info = command[DefaultInfo]
     executable = default_info.files_to_run.executable
 
     default_runfiles = default_info.default_runfiles
@@ -66,8 +67,7 @@ def _command_impl(ctx):
         ),
     ]
 
-command = rule(
-    implementation = _command_impl,
+def command_with_transition(cfg, allowlist = None):
     attrs = {
         "arguments": attr.string_list(
             doc = "List of command line arguments. Subject to $(location) expansion. See https://docs.bazel.build/versions/master/skylark/lib/ctx.html#expand_location",
@@ -84,14 +84,18 @@ command = rule(
             allow_files = True,
             executable = True,
             doc = "Target to run",
-            cfg = _force_opt,
+            cfg = cfg,
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
         ),
-        "_allowlist_function_transition": attr.label(
-            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
-        ),
-    },
-    executable = True,
-)
+    }
+
+    return rule(
+        implementation = _command_impl,
+        attrs = update_attrs(attrs, cfg, allowlist),
+        executable = True,
+    )
+
+command = command_with_transition("target")
+command_force_opt = command_with_transition(_force_opt)

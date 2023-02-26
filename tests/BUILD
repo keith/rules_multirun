@@ -1,5 +1,5 @@
-load("//:defs.bzl", "command", "multirun")
-load(":transitions.bzl", "multirun_lambda")
+load("//:defs.bzl", "command", "command_force_opt", "multirun")
+load(":transitions.bzl", "command_lambda", "multirun_lambda")
 
 sh_binary(
     name = "echo_hello",
@@ -28,7 +28,7 @@ sh_binary(
     deps = ["@bazel_tools//tools/bash/runfiles"],
 )
 
-command(
+command_force_opt(
     name = "validate_chdir_location_cmd",
     arguments = ["$(rlocationpath :hello)"],
     command = "validate_chdir_location",
@@ -40,7 +40,7 @@ sh_binary(
     srcs = ["validate-env.sh"],
 )
 
-command(
+command_lambda(
     name = "validate_env_cmd",
     command = "validate_env",
     environment = {"FOO_ENV": "foo"},
@@ -74,8 +74,8 @@ multirun(
 
 sh_binary(
     name = "validate_binary_args",
-    args = ["foo"],
     srcs = ["validate-args.sh"],
+    args = ["foo"],
 )
 
 multirun(
@@ -85,8 +85,8 @@ multirun(
 
 sh_binary(
     name = "validate_binary_env",
-    env = {"FOO_ENV": "foo"},
     srcs = ["validate-env.sh"],
+    env = {"FOO_ENV": "foo"},
 )
 
 multirun(
@@ -110,9 +110,9 @@ multirun_lambda(
 
 sh_binary(
     name = "validate_binary_args_location",
+    srcs = ["validate-chdir-location.sh"],
     args = ["$(rlocationpath :hello)"],
     data = [":hello"],
-    srcs = ["validate-chdir-location.sh"],
 )
 
 multirun(
