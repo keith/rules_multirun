@@ -5,7 +5,7 @@ in a single invocation.
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//internal:constants.bzl", "RUNFILES_PREFIX")
+load("//internal:constants.bzl", "RUNFILES_PREFIX", "update_attrs")
 
 _BinaryArgsEnvInfo = provider(fields = ["args", "env"])
 
@@ -144,12 +144,9 @@ def multirun_with_transition(cfg, allowlist = None):
         ),
     }
 
-    if allowlist:
-        attrs["_allowlist_function_transition"] = attr.label(default = allowlist)
-
     return rule(
         implementation = _multirun_impl,
-        attrs = attrs,
+        attrs = update_attrs(attrs, cfg, allowlist),
         executable = True,
     )
 
