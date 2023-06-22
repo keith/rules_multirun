@@ -14,6 +14,9 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 # --- end runfiles.bash initialization v2 ---
 
+# PATH varies when running vs testing, this makes it more like running to validate the actual behavior. Specifically '.' is included for tests but not runs
+export PATH=/usr/bin:/bin
+
 script=$(rlocation rules_multirun/tests/hello.bash)
 output=$($script)
 if [[ "$output" != "hello" ]]; then
@@ -62,5 +65,13 @@ serial_with_transition_output=$($script | sed 's=@[^/]*/=@/=g')
 if [[ "$serial_with_transition_output" != "Running @//tests:validate_env_cmd
 Running @//tests:validate_args_cmd" ]]; then
   echo "Expected labeled output, got '$serial_with_transition_output'"
+  exit 1
+fi
+
+script=$(rlocation rules_multirun/tests/root_multirun.bash)
+cat "$script"
+root_output=$($script)
+if [[ "$root_output" != "hello" ]]; then
+  echo "Expected 'hello' from root, got '$output'"
   exit 1
 fi
