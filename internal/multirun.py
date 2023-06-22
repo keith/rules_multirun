@@ -13,7 +13,7 @@ class Command(NamedTuple):
 
 
 def _run_command(command: Command, block: bool):
-    args = [command.path] + command.args
+    args = ['./' + command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
     if block:
