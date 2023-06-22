@@ -4,6 +4,7 @@ load(":transitions.bzl", "command_lambda", "multirun_lambda")
 sh_binary(
     name = "echo_hello",
     srcs = ["echo_hello.sh"],
+    visibility = ["//:__subpackages__"],
 )
 
 command(
@@ -120,6 +121,12 @@ multirun(
     commands = [":validate_binary_args_location"],
 )
 
+multirun(
+    name = "root_multirun",
+    commands = ["//:root_command"],
+    jobs = 0,
+)
+
 sh_test(
     name = "test",
     srcs = ["test.sh"],
@@ -132,6 +139,7 @@ sh_test(
         ":multirun_serial",
         ":multirun_serial_no_print",
         ":multirun_with_transition",
+        ":root_multirun",
         ":validate_args_cmd",
         ":validate_chdir_location_cmd",
         ":validate_env_cmd",
