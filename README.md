@@ -10,6 +10,7 @@ Setup the tools you want to run:
 
 ```bzl
 load("@rules_multirun//:defs.bzl", "command", "multirun")
+load("@rules_python//python:defs.bzl", "py_binary")
 
 sh_binary(
     name = "some_linter",
