@@ -12,7 +12,10 @@ load(
     "update_attrs",
 )
 
-_BinaryArgsEnvInfo = provider(fields = ["args", "env"])
+_BinaryArgsEnvInfo = provider(
+    fields = ["args", "env"],
+    doc = "The arguments and environment to use when running the binary",
+)
 
 def _binary_args_env_aspect_impl(target, ctx):
     if _BinaryArgsEnvInfo in target:
