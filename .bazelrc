@@ -1,10 +1,11 @@
+common --enable_platform_specific_config
 common --lockfile_mode=off
 
 build --remote_cache=grpcs://remote.buildbuddy.io
 build --remote_timeout=3600
 
 # TODO: Remove once stardoc's protobuf doesn't have warnings
-build --host_per_file_copt="external/.*protobuf.*@-Wno-everything"
-build --per_file_copt="external/.*protobuf.*@-Wno-everything"
+build:macos --host_per_file_copt="external/.*protobuf.*@-Wno-everything"
+build:macos --per_file_copt="external/.*protobuf.*@-Wno-everything"
 
 test --test_output=errors
