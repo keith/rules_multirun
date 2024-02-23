@@ -12,7 +12,38 @@ useful for running multiple linters or formatters with a single command.
 command(<a href="#command-name">name</a>, <a href="#command-data">data</a>, <a href="#command-arguments">arguments</a>, <a href="#command-command">command</a>, <a href="#command-description">description</a>, <a href="#command-environment">environment</a>)
 </pre>
 
+A command is a wrapper rule for some other target that can be run like a
+command line tool. You can customize the command to run with specific arguments
+or environment variables you would like to be passed. Then you can compose
+multiple commands into a multirun rule to run them in a single bazel
+invocation, and in parallel if desired.
 
+```bzl
+load("@rules_multirun//:defs.bzl", "multirun", "command")
+
+sh_binary(
+    name = "some_linter",
+    ...
+)
+
+py_binary(
+    name = "some_other_linter",
+    ...
+)
+
+command(
+    name = "lint-something",
+    command = ":some_linter",
+    arguments = ["check"], # Optional arguments passed directly to the tool
+)
+
+command(
+    name = "lint-something-else",
+    command = ":some_other_linter",
+    environment = {"CHECK": "true"}, # Optional environment variables set when invoking the command
+    data = ["..."] # Optional runtime data dependencies
+)
+```
 
 **ATTRIBUTES**
 
@@ -35,7 +66,11 @@ command(<a href="#command-name">name</a>, <a href="#command-data">data</a>, <a h
 command_force_opt(<a href="#command_force_opt-name">name</a>, <a href="#command_force_opt-data">data</a>, <a href="#command_force_opt-arguments">arguments</a>, <a href="#command_force_opt-command">command</a>, <a href="#command_force_opt-description">description</a>, <a href="#command_force_opt-environment">environment</a>)
 </pre>
 
+A command that forces the compilation mode of the dependent targets to opt. This can be useful if your tools have improved performance if built with optimizations. See the documentation for command for more examples. If you'd like to always use this variation you can import this directly and rename it for convenience like:
 
+```bzl
+load("@rules_multirun//:defs.bzl", "multirun", command = "command_force_opt")
+```
 
 **ATTRIBUTES**
 
@@ -58,7 +93,53 @@ command_force_opt(<a href="#command_force_opt-name">name</a>, <a href="#command_
 multirun(<a href="#multirun-name">name</a>, <a href="#multirun-data">data</a>, <a href="#multirun-commands">commands</a>, <a href="#multirun-jobs">jobs</a>, <a href="#multirun-keep_going">keep_going</a>, <a href="#multirun-print_command">print_command</a>)
 </pre>
 
+A multirun composes multiple command rules in order to run them in a single
+bazel invocation, optionally in parallel. This can have a major performance
+improvement both in build time and run time depending on your tools.
 
+```bzl
+load("@rules_multirun//:defs.bzl", "command", "multirun")
+load("@rules_python//python:defs.bzl", "py_binary")
+
+sh_binary(
+    name = "some_linter",
+    ...
+)
+
+py_binary(
+    name = "some_other_linter",
+    ...
+)
+
+command(
+    name = "lint-something",
+    command = ":some_linter",
+    arguments = ["check"], # Optional arguments passed directly to the tool
+)
+
+command(
+    name = "lint-something-else",
+    command = ":some_other_linter",
+    environment = {"CHECK": "true"}, # Optional environment variables set when invoking the command
+    data = ["..."] # Optional runtime data dependencies
+)
+
+multirun(
+    name = "lint",
+    commands = [
+        "lint-something",
+        "lint-something-else",
+    ],
+    jobs = 0, # Set to 0 to run in parallel, defaults to sequential
+)
+```
+
+With this configuration you can `bazel run :lint` and it will run both both
+linters in parallel. If you would like to run them serially you can omit the `jobs` attribute.
+
+NOTE: If your commands change files in the workspace you might want to prefer
+sequential execution to avoid race conditions when changing the same file from
+multiple tools.
 
 **ATTRIBUTES**
 
@@ -78,9 +159,13 @@ multirun(<a href="#multirun-name">name</a>, <a href="#multirun-data">data</a>, <
 ## command_with_transition
 
 <pre>
-command_with_transition(<a href="#command_with_transition-cfg">cfg</a>, <a href="#command_with_transition-allowlist">allowlist</a>)
+command_with_transition(<a href="#command_with_transition-cfg">cfg</a>, <a href="#command_with_transition-allowlist">allowlist</a>, <a href="#command_with_transition-doc">doc</a>)
 </pre>
 
+Create a command rule with a transition to the given configuration.
+
+This is useful if you have a project-specific configuration that you want
+to apply to all of your commands. See also multirun_with_transition.
 
 
 **PARAMETERS**
@@ -88,8 +173,9 @@ command_with_transition(<a href="#command_with_transition-cfg">cfg</a>, <a href=
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="command_with_transition-cfg"></a>cfg |  <p align="center"> - </p>   |  none |
-| <a id="command_with_transition-allowlist"></a>allowlist |  <p align="center"> - </p>   |  `None` |
+| <a id="command_with_transition-cfg"></a>cfg |  The transition to force on the dependent targets.   |  none |
+| <a id="command_with_transition-allowlist"></a>allowlist |  The transition allowlist to use for the given cfg. Not necessary in newer bazel versions.   |  `None` |
+| <a id="command_with_transition-doc"></a>doc |  The documentation to use for the rule. Only necessary if you're generating documentation with stardoc for your custom rules.   |  `None` |
 
 
 <a id="multirun_with_transition"></a>
@@ -100,6 +186,10 @@ command_with_transition(<a href="#command_with_transition-cfg">cfg</a>, <a href=
 multirun_with_transition(<a href="#multirun_with_transition-cfg">cfg</a>, <a href="#multirun_with_transition-allowlist">allowlist</a>)
 </pre>
 
+Creates a multirun rule which transitions all commands to the given configuration.
+
+This is useful if you have a project-specific configuration that you want
+to apply to all of your commands. See also command_with_transition.
 
 
 **PARAMETERS**
@@ -107,7 +197,7 @@ multirun_with_transition(<a href="#multirun_with_transition-cfg">cfg</a>, <a hre
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="multirun_with_transition-cfg"></a>cfg |  <p align="center"> - </p>   |  none |
-| <a id="multirun_with_transition-allowlist"></a>allowlist |  <p align="center"> - </p>   |  `None` |
+| <a id="multirun_with_transition-cfg"></a>cfg |  The transition to force on the dependent commands.   |  none |
+| <a id="multirun_with_transition-allowlist"></a>allowlist |  The transition allowlist to use for the given cfg. Not necessary in newer bazel versions.   |  `None` |
 
 

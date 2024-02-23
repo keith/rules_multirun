@@ -82,7 +82,18 @@ def _command_impl(ctx):
 
     return providers
 
-def command_with_transition(cfg, allowlist = None):
+def command_with_transition(cfg, allowlist = None, doc = None):
+    """Create a command rule with a transition to the given configuration.
+
+    This is useful if you have a project-specific configuration that you want
+    to apply to all of your commands. See also multirun_with_transition.
+
+    Args:
+        cfg: The transition to force on the dependent targets.
+        allowlist: The transition allowlist to use for the given cfg. Not necessary in newer bazel versions.
+        doc: The documentation to use for the rule. Only necessary if you're generating documentation with stardoc for your custom rules.
+    """
+
     attrs = {
         "arguments": attr.string_list(
             doc = "List of command line arguments. Subject to $(location) expansion. See https://docs.bazel.build/versions/master/skylark/lib/ctx.html#expand_location",
@@ -113,7 +124,50 @@ def command_with_transition(cfg, allowlist = None):
         implementation = _command_impl,
         attrs = update_attrs(attrs, cfg, allowlist),
         executable = True,
+        doc = doc or """\
+A command is a wrapper rule for some other target that can be run like a
+command line tool. You can customize the command to run with specific arguments
+or environment variables you would like to be passed. Then you can compose
+multiple commands into a multirun rule to run them in a single bazel
+invocation, and in parallel if desired.
+
+```bzl
+load("@rules_multirun//:defs.bzl", "multirun", "command")
+
+sh_binary(
+    name = "some_linter",
+    ...
+)
+
+py_binary(
+    name = "some_other_linter",
+    ...
+)
+
+command(
+    name = "lint-something",
+    command = ":some_linter",
+    arguments = ["check"], # Optional arguments passed directly to the tool
+)
+
+command(
+    name = "lint-something-else",
+    command = ":some_other_linter",
+    environment = {"CHECK": "true"}, # Optional environment variables set when invoking the command
+    data = ["..."] # Optional runtime data dependencies
+)
+```
+    """,
     )
 
 command = command_with_transition("target")
-command_force_opt = command_with_transition(_force_opt)
+command_force_opt = command_with_transition(
+    _force_opt,
+    doc = """\
+A command that forces the compilation mode of the dependent targets to opt. This can be useful if your tools have improved performance if built with optimizations. See the documentation for command for more examples. If you'd like to always use this variation you can import this directly and rename it for convenience like:
+
+```bzl
+load("@rules_multirun//:defs.bzl", "multirun", command = "command_force_opt")
+```
+    """,
+)
