@@ -5,7 +5,12 @@ in a single invocation.
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//internal:constants.bzl", "RUNFILES_PREFIX", "update_attrs")
+load(
+    "//internal:constants.bzl",
+    "CommandInfo",
+    "RUNFILES_PREFIX",
+    "update_attrs",
+)
 
 _BinaryArgsEnvInfo = provider(fields = ["args", "env"])
 
@@ -58,7 +63,6 @@ def _multirun_impl(ctx):
 
     for tag_command in tagged_commands:
         command = tag_command.command
-        tag = tag_command.tag
 
         default_info = command[DefaultInfo]
         if default_info.files_to_run == None:
@@ -77,6 +81,12 @@ def _multirun_impl(ctx):
         default_runfiles = default_info.default_runfiles
         if default_runfiles != None:
             runfiles = runfiles.merge(default_runfiles)
+
+        if CommandInfo in command:
+            tag = command[CommandInfo].description
+        else:
+            tag = "Running {}".format(tag_command.tag)
+
         commands.append(struct(
             tag = tag,
             path = exe.short_path,

@@ -2,7 +2,7 @@ import json
 import os
 import subprocess
 import sys
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Union
 
 
 class Command(NamedTuple):
@@ -12,7 +12,7 @@ class Command(NamedTuple):
     env: Dict[str, str]
 
 
-def _run_command(command: Command, block: bool):
+def _run_command(command: Command, block: bool) -> Union[int, subprocess.Popen]:
     args = ['./' + command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
@@ -37,7 +37,7 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
     success = True
     for command in commands:
         if print_command:
-            print(f"Running {command.tag}", flush=True)
+            print(command.tag, flush=True)
 
         try:
             _run_command(command, block=True)

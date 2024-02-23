@@ -34,6 +34,13 @@ command(
     command = "validate_args",
 )
 
+command(
+    name = "validate_args_cmd_description",
+    arguments = ["foo"],
+    command = "validate_args",
+    description = "some custom string",
+)
+
 sh_binary(
     name = "validate_chdir_location",
     srcs = ["validate-chdir-location.sh"],
@@ -82,6 +89,14 @@ multirun(
         ":echo_hello",
     ],
     keep_going = True,
+)
+
+multirun(
+    name = "multirun_serial_description",
+    commands = [
+        ":validate_args_cmd_description",
+        ":validate_env_cmd",
+    ],
 )
 
 multirun(
@@ -158,11 +173,13 @@ sh_test(
         ":multirun_binary_env",
         ":multirun_parallel",
         ":multirun_serial",
+        ":multirun_serial_description",
         ":multirun_serial_keep_going",
         ":multirun_serial_no_print",
         ":multirun_with_transition",
         ":root_multirun",
         ":validate_args_cmd",
+        ":validate_args_cmd_description",
         ":validate_chdir_location_cmd",
         ":validate_env_cmd",
     ],
