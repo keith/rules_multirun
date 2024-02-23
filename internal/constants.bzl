@@ -28,7 +28,7 @@ CommandInfo = provider(
 def update_attrs(attrs, cfg, allowlist):
     """Conditionally update attributes.
 
-    Arguments:
+    Args:
         attrs: Attributes dictionary.
         cfg: The command configuration.
         allowlist: Optional allow list label that will be applied to the configuration transition.
