@@ -1,3 +1,4 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 load("//:defs.bzl", "command", "command_force_opt", "multirun")
 load(":transitions.bzl", "command_lambda", "multirun_lambda")
 
