@@ -45,6 +45,23 @@ if [[ -n "$parallel_output" ]]; then
   exit 1
 fi
 
+script="$(rlocation rules_multirun/tests/multirun_parallel_no_buffer.bash)"
+parallel_output="$($script)"
+if [[ -n "$parallel_output" ]]; then
+  echo "Expected no output, got '$parallel_output'"
+  exit 1
+fi
+
+script="$(rlocation rules_multirun/tests/multirun_parallel_with_output.bash)"
+parallel_output=$($script | sed 's=@[^/]*/=@/=g')
+if [[ "$parallel_output" != "Running @//tests:echo_hello
+hello
+Running @//tests:echo_hello2
+hello2" ]]; then
+  echo "Expected output, got '$parallel_output'"
+  exit 1
+fi
+
 script=$(rlocation rules_multirun/tests/multirun_serial.bash)
 serial_output=$($script | sed 's=@[^/]*/=@/=g')
 if [[ "$serial_output" != "Running @//tests:validate_args_cmd
