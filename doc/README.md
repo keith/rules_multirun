@@ -1,6 +1,8 @@
 <!-- Generated with Stardoc: http://skydoc.bazel.build -->
 
-Export APIs for easier use, see specific files for details
+These rules provide a simple interface for running multiple commands,
+optionally in parallel, with a single bazel run invocation. This is especially
+useful for running multiple linters or formatters with a single command.
 
 <a id="command"></a>
 

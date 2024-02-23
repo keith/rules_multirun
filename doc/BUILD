@@ -26,7 +26,7 @@ write_file(
         "#!/usr/bin/env bash",
         "set -euo pipefail",
     ] + [
-        'cp -fv doc/{file}.gen.md "$BUILD_WORKSPACE_DIRECTORY/doc/{file}.md"'.format(
+        'cp -fv doc/{file}.gen.md "$BUILD_WORKSPACE_DIRECTORY/doc/README.md"'.format(
             file = file,
         )
         for file in _DOC_SRCS
@@ -44,7 +44,7 @@ sh_binary(
         name = "check_" + file,
         failure_message = "\nPlease update the docs by running\n    bazel run //doc:update",
         file1 = file + ".gen.md",
-        file2 = file + ".md",
+        file2 = "README.md",
     )
     for file in _DOC_SRCS
 ]
