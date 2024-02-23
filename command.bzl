@@ -4,7 +4,12 @@ multirun definition
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//internal:constants.bzl", "RUNFILES_PREFIX", "update_attrs")
+load(
+    "//internal:constants.bzl",
+    "CommandInfo",
+    "RUNFILES_PREFIX",
+    "update_attrs",
+)
 
 def _force_opt_impl(_settings, _attr):
     return {"//command_line_option:compilation_mode": "opt"}
@@ -59,13 +64,23 @@ def _command_impl(ctx):
         content = "\n".join([RUNFILES_PREFIX] + str_env + [command_exec]),
         is_executable = True,
     )
-    return [
+
+    providers = [
         DefaultInfo(
             files = depset([out_file]),
             runfiles = runfiles.merge(ctx.runfiles(files = ctx.files.data + [executable])),
             executable = out_file,
         ),
     ]
+
+    if ctx.attr.description:
+        providers.append(
+            CommandInfo(
+                description = ctx.attr.description,
+            ),
+        )
+
+    return providers
 
 def command_with_transition(cfg, allowlist = None):
     attrs = {
@@ -85,6 +100,9 @@ def command_with_transition(cfg, allowlist = None):
             executable = True,
             doc = "Target to run",
             cfg = cfg,
+        ),
+        "description": attr.string(
+            doc = "A string describing the command printed during multiruns",
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),

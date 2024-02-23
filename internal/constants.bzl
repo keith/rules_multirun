@@ -20,6 +20,11 @@ runfiles_export_envvars
 
 """
 
+CommandInfo = provider(
+    fields = ["description"],
+    doc = "Information about commands used by their multirun.",
+)
+
 def update_attrs(attrs, cfg, allowlist):
     """Conditionally update attributes.
 

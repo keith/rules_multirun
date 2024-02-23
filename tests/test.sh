@@ -67,6 +67,14 @@ hello" ]]; then
   exit 1
 fi
 
+script=$(rlocation rules_multirun/tests/multirun_serial_description.bash)
+serial_output=$($script | sed 's=@[^/]*/=@/=g')
+if [[ "$serial_output" != "some custom string
+Running @//tests:validate_env_cmd" ]]; then
+  echo "Expected labeled output, got '$serial_output'"
+  exit 1
+fi
+
 script=$(rlocation rules_multirun/tests/multirun_serial_no_print.bash)
 serial_no_output=$($script)
 if [[ -n "$serial_no_output" ]]; then
