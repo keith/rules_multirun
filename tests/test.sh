@@ -53,6 +53,20 @@ Running @//tests:validate_env_cmd" ]]; then
   exit 1
 fi
 
+script=$(rlocation rules_multirun/tests/multirun_serial_keep_going.bash)
+if serial_output=$($script | sed 's=@[^/]*/=@/=g'); then
+  echo "Expected failure" >&2
+  exit 1
+fi
+
+if [[ "$serial_output" != "Running @//tests:echo_and_fail
+hello and fail
+Running @//tests:echo_hello
+hello" ]]; then
+  echo "Expected labeled output, got '$serial_output'"
+  exit 1
+fi
+
 script=$(rlocation rules_multirun/tests/multirun_serial_no_print.bash)
 serial_no_output=$($script)
 if [[ -n "$serial_no_output" ]]; then

@@ -92,6 +92,7 @@ def _multirun_impl(ctx):
         commands = commands,
         jobs = jobs,
         print_command = ctx.attr.print_command,
+        keep_going = ctx.attr.keep_going,
     )
     ctx.actions.write(
         output = instructions_file,
@@ -133,6 +134,10 @@ def multirun_with_transition(cfg, allowlist = None):
         "print_command": attr.bool(
             default = True,
             doc = "Print what command is being run before running it. Only for sequential execution.",
+        ),
+        "keep_going": attr.bool(
+            default = False,
+            doc = "Keep going after a command fails. Only for sequential execution.",
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),

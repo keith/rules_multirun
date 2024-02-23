@@ -13,6 +13,17 @@ command(
 )
 
 sh_binary(
+    name = "echo_and_fail",
+    srcs = ["echo_and_fail.sh"],
+    visibility = ["//:__subpackages__"],
+)
+
+command(
+    name = "echo_and_fail_cmd",
+    command = "echo_and_fail",
+)
+
+sh_binary(
     name = "validate_args",
     srcs = ["validate-args.sh"],
 )
@@ -62,6 +73,16 @@ multirun(
         ":validate_args_cmd",
         ":validate_env_cmd",
     ],
+    keep_going = True,
+)
+
+multirun(
+    name = "multirun_serial_keep_going",
+    commands = [
+        ":echo_and_fail",
+        ":echo_hello",
+    ],
+    keep_going = True,
 )
 
 multirun(
@@ -131,12 +152,14 @@ sh_test(
     name = "test",
     srcs = ["test.sh"],
     data = [
+        ":echo_and_fail_cmd",
         ":hello",
         ":multirun_binary_args",
         ":multirun_binary_args_location",
         ":multirun_binary_env",
         ":multirun_parallel",
         ":multirun_serial",
+        ":multirun_serial_keep_going",
         ":multirun_serial_no_print",
         ":multirun_with_transition",
         ":root_multirun",
