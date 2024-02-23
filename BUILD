@@ -1,6 +1,11 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//:defs.bzl", "command")
 
+exports_files(
+    glob(["*.bzl"]),
+    visibility = ["//doc:__pkg__"],
+)
+
 command(
     name = "root_command",
     command = "//tests:echo_hello",
