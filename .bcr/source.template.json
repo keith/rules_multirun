@@ -1,5 +1,5 @@
 {
-    "url": "https://github.com/keith/rules_multirun/archive/refs/tags/{TAG}.tar.gz",
     "integrity": "",
-    "strip_prefix": "rules_multirun-{TAG}"
+    "strip_prefix": "",
+    "url": "https://github.com/keith/rules_multirun/releases/download/{TAG}/rules_multirun.{TAG}.tar.gz"
 }
