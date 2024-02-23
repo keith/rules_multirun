@@ -4,8 +4,6 @@ load("@stardoc//stardoc:stardoc.bzl", "stardoc")
 
 _DOC_SRCS = [
     "defs",
-    "command",
-    "multirun",
 ]
 
 [
