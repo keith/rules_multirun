@@ -128,6 +128,15 @@ def _multirun_impl(ctx):
     ]
 
 def multirun_with_transition(cfg, allowlist = None):
+    """Creates a multirun rule which transitions all commands to the given configuration.
+
+    This is useful if you have a project-specific configuration that you want
+    to apply to all of your commands. See also command_with_transition.
+
+    Args:
+        cfg: The transition to force on the dependent commands.
+        allowlist: The transition allowlist to use for the given cfg. Not necessary in newer bazel versions.
+    """
     attrs = {
         "commands": attr.label_list(
             mandatory = False,
@@ -166,6 +175,55 @@ def multirun_with_transition(cfg, allowlist = None):
         implementation = _multirun_impl,
         attrs = update_attrs(attrs, cfg, allowlist),
         executable = True,
+        doc = """\
+A multirun composes multiple command rules in order to run them in a single
+bazel invocation, optionally in parallel. This can have a major performance
+improvement both in build time and run time depending on your tools.
+
+```bzl
+load("@rules_multirun//:defs.bzl", "command", "multirun")
+load("@rules_python//python:defs.bzl", "py_binary")
+
+sh_binary(
+    name = "some_linter",
+    ...
+)
+
+py_binary(
+    name = "some_other_linter",
+    ...
+)
+
+command(
+    name = "lint-something",
+    command = ":some_linter",
+    arguments = ["check"], # Optional arguments passed directly to the tool
+)
+
+command(
+    name = "lint-something-else",
+    command = ":some_other_linter",
+    environment = {"CHECK": "true"}, # Optional environment variables set when invoking the command
+    data = ["..."] # Optional runtime data dependencies
+)
+
+multirun(
+    name = "lint",
+    commands = [
+        "lint-something",
+        "lint-something-else",
+    ],
+    jobs = 0, # Set to 0 to run in parallel, defaults to sequential
+)
+```
+
+With this configuration you can `bazel run :lint` and it will run both both
+linters in parallel. If you would like to run them serially you can omit the `jobs` attribute.
+
+NOTE: If your commands change files in the workspace you might want to prefer
+sequential execution to avoid race conditions when changing the same file from
+multiple tools.
+""",
     )
 
 multirun = multirun_with_transition("target")

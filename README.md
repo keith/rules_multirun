@@ -51,6 +51,8 @@ Run the `multirun` target with bazel:
 $ bazel run //:lint
 ```
 
+See [the full API docs](doc) for more info.
+
 ## Usage with platform transitions
 
 In case if the `multirun` rule requires a transition to other configuration than `target` then
