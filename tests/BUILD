@@ -13,6 +13,17 @@ command(
 )
 
 sh_binary(
+    name = "echo_hello2",
+    srcs = ["echo_hello2.sh"],
+    visibility = ["//:__subpackages__"],
+)
+
+command(
+    name = "hello2",
+    command = "echo_hello2",
+)
+
+sh_binary(
     name = "echo_and_fail",
     srcs = ["echo_and_fail.sh"],
     visibility = ["//:__subpackages__"],
@@ -70,6 +81,26 @@ multirun(
     commands = [
         ":validate_args_cmd",
         ":validate_env_cmd",
+    ],
+    jobs = 0,
+    print_command = False,
+)
+
+multirun(
+    name = "multirun_parallel_no_buffer",
+    buffer_output = False,
+    commands = [
+        ":validate_args_cmd",
+        ":validate_env_cmd",
+    ],
+    jobs = 0,
+)
+
+multirun(
+    name = "multirun_parallel_with_output",
+    commands = [
+        ":echo_hello",
+        ":echo_hello2",
     ],
     jobs = 0,
 )
@@ -160,6 +191,7 @@ multirun(
     name = "root_multirun",
     commands = ["//:root_command"],
     jobs = 0,
+    print_command = False,
 )
 
 sh_test(
@@ -168,10 +200,13 @@ sh_test(
     data = [
         ":echo_and_fail_cmd",
         ":hello",
+        ":hello2",
         ":multirun_binary_args",
         ":multirun_binary_args_location",
         ":multirun_binary_env",
         ":multirun_parallel",
+        ":multirun_parallel_no_buffer",
+        ":multirun_parallel_with_output",
         ":multirun_serial",
         ":multirun_serial_description",
         ":multirun_serial_keep_going",
