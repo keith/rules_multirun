@@ -69,9 +69,8 @@ Running @//tests:validate_args_cmd" ]]; then
 fi
 
 script=$(rlocation rules_multirun/tests/root_multirun.bash)
-cat "$script"
 root_output=$($script)
 if [[ "$root_output" != "hello" ]]; then
-  echo "Expected 'hello' from root, got '$output'"
+  echo "Expected 'hello' from root, got '$root_output'"
   exit 1
 fi
