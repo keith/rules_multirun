@@ -163,8 +163,8 @@ def multirun_with_transition(cfg, allowlist = None):
             doc = "Keep going after a command fails. Only for sequential execution.",
         ),
         "buffer_output": attr.bool(
-            default = True,
-            doc = "Buffer the output of the commands and print it after the command has finished. Only for parallel execution.",
+            default = False,
+            doc = "Buffer the output of the commands and print it after each command has finished. Only for parallel execution.",
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),

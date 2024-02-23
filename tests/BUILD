@@ -98,6 +98,7 @@ multirun(
 
 multirun(
     name = "multirun_parallel_with_output",
+    buffer_output = True,
     commands = [
         ":echo_hello",
         ":echo_hello2",
