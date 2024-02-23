@@ -73,7 +73,6 @@ multirun(
         ":validate_args_cmd",
         ":validate_env_cmd",
     ],
-    keep_going = True,
 )
 
 multirun(
