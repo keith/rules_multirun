@@ -33,17 +33,21 @@ def _perform_concurrently(commands: List[Command]) -> bool:
     return success
 
 
-def _perform_serially(commands: List[Command], print_command: bool) -> bool:
+def _perform_serially(commands: List[Command], print_command: bool, keep_going: bool) -> bool:
+    success = True
     for command in commands:
         if print_command:
-            print(f"Running {command.tag}")
+            print(f"Running {command.tag}", flush=True)
 
         try:
             _run_command(command, block=True)
         except subprocess.CalledProcessError:
-            return False
+            if keep_going:
+                success = False
+            else:
+                return False
 
-    return True
+    return success
 
 
 def _main(path: str) -> None:
@@ -58,7 +62,7 @@ def _main(path: str) -> None:
     if parallel:
         success = _perform_concurrently(commands)
     else:
-        success = _perform_serially(commands, instructions["print_command"])
+        success = _perform_serially(commands, instructions["print_command"], instructions["keep_going"])
 
     sys.exit(0 if success else 1)
 
