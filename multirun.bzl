@@ -113,7 +113,7 @@ def _multirun_impl(ctx):
         content = instructions.to_json(),
     )
 
-    script = 'exec ./%s -f %s "$@"\n' % (shell.quote(runner_exe.short_path), shell.quote(instructions_file.short_path))
+    script = 'loc=$(rlocation _main/%s); exec "$loc" -f %s "$@"\n' % (shell.quote(runner_exe.short_path), shell.quote(instructions_file.short_path))
     out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
     ctx.actions.write(
         output = out_file,

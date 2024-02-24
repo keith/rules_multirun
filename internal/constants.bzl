@@ -18,8 +18,8 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \\
 # Export RUNFILES_* envvars (and a couple more) for subprocesses.
 runfiles_export_envvars
 
-ls -R || true
-dir . || true
+# ls -R || true
+# dir . || true
 
 """
 
