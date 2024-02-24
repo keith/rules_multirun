@@ -47,3 +47,13 @@ def update_attrs(attrs, cfg, allowlist):
         attrs["_allowlist_function_transition"] = attr.label(default = allowlist or "@bazel_tools//tools/allowlists/function_transition_allowlist")
 
     return attrs
+
+def rlocation_path(ctx, file):
+    """Produce the rlocation lookup path for the given file.
+
+    See https://github.com/bazelbuild/bazel-skylib/issues/303.
+    """
+    if file.short_path.startswith("../"):
+        return file.short_path[3:]
+    else:
+        return ctx.workspace_name + "/" + file.short_path

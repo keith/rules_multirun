@@ -9,6 +9,7 @@ load(
     "//internal:constants.bzl",
     "CommandInfo",
     "RUNFILES_PREFIX",
+    "rlocation_path",
     "update_attrs",
 )
 
@@ -113,7 +114,11 @@ def _multirun_impl(ctx):
         content = instructions.to_json(),
     )
 
-    script = 'loc="$(rlocation _main/%s)"; instructions="$(rlocation _main/%s)"; exec "$loc" -f "$instructions" "$@"\n' % (shell.quote(runner_exe.short_path), shell.quote(instructions_file.short_path))
+    script = """\
+multirun_script="$(rlocation {})"
+instructions="$(rlocation {})"
+exec "$multirun_script" -f "$instructions"
+""".format(shell.quote(rlocation_path(ctx, runner_exe)), shell.quote(rlocation_path(ctx, instructions_file)))
     out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
     ctx.actions.write(
         output = out_file,
