@@ -20,7 +20,11 @@ class Command(NamedTuple):
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
     if platform.system() == "Windows":
-        args = [shutil.which("bash.exe"), "-c", f'{command.path} "$@"', "--"] + command.args
+        bash = shutil.which("bash.exe")
+        if not bash:
+            raise SystemExit("error: bash.exe not found in PATH")
+
+        args = [bash, "-c", f'{command.path} "$@"', "--"] + command.args
     else:
         args = [command.path] + command.args
     env = dict(os.environ)
