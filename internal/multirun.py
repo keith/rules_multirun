@@ -30,12 +30,7 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
     env = dict(os.environ)
     env.update(command.env)
     if block:
-        try:
-            print(f"Running {command.path} with args {args}", file=sys.stderr)
-            return subprocess.check_call(args, env=env)
-        except FileNotFoundError:
-            print(f"Error: {command.path} not found {args}", file=sys.stderr)
-            raise
+        return subprocess.check_call(args, env=env)
     else:
         return subprocess.Popen(args, env=env, **kwargs)
 
