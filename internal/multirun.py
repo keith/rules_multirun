@@ -18,7 +18,7 @@ class Command(NamedTuple):
 
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
-    args = [command.path] + command.args
+    args = ["bash.exe", command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
     if block:
@@ -80,14 +80,14 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
 
 
 def _script_path(workspace_name: str, path: str) -> str:
-    print("checking ", os.path.join(workspace_name, path))
-    print("maybe should check checking ", f"{workspace_name}/{path}")
+    print("checking ", os.path.join(workspace_name, path), file=sys.stderr)
+    print("maybe should check checking ", f"{workspace_name}/{path}", file=sys.stderr)
     b = f"{workspace_name}/{path}"
     resolved_path2 = _R.Rlocation( b)
     if resolved_path2 and os.path.exists(resolved_path2):
-        print("resolved path 2 exists", resolved_path2)
+        print("resolved path 2 exists", resolved_path2, file=sys.stderr)
         return resolved_path2
-    print("no resolved path 2", resolved_path2)
+    print("no resolved path 2", resolved_path2, file=sys.stderr)
     resolved_path = _R.Rlocation(
         os.path.join(workspace_name, path)
     )
