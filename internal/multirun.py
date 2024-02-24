@@ -5,6 +5,10 @@ import sys
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Union
 
+from python.runfiles import runfiles
+
+_R = runfiles.Create()
+
 
 class Command(NamedTuple):
     path: Path
@@ -14,10 +18,10 @@ class Command(NamedTuple):
 
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
-    print(os.listdir("."))
-    print(os.listdir("tests"))
-    args = [command.path.absolute()] + command.args
-    assert command.path.exists(), f"Error: {command.path} not found"
+    script_path = _R.Rlocation(
+        str("_main" / command.path)
+    )
+    args = [script_path] + command.args
     env = dict(os.environ)
     env.update(command.env)
     if block:
