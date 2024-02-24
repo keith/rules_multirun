@@ -90,6 +90,13 @@ def _main(path: str) -> None:
     with open(path) as f:
         instructions = json.load(f)
 
+    for d in _R.EnvVars().values():
+        if os.path.isdir(d):
+            print(f"Found dir: {d}")
+            print(os.listdir(d))
+        else:
+            print("not dir ", d)
+
     workspace_name = instructions["workspace_name"]
     commands = [
         Command(_script_path(workspace_name, blob["path"]), blob["tag"], blob["args"], blob["env"])
