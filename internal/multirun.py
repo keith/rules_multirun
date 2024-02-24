@@ -22,7 +22,7 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
     print(os.environ, file=sys.stderr)
     print(shutil.which("bash"), file=sys.stderr)
     print(shutil.which("bash.exe"), file=sys.stderr)
-    args = ["bash.exe", command.path] + command.args
+    args = [shutil.which("bash.exe"), command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
     if block:
