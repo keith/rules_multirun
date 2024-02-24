@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +19,9 @@ class Command(NamedTuple):
 
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
+    print(os.environ, file=sys.stderr)
+    print(shutil.which("bash"), file=sys.stderr)
+    print(shutil.which("bash.exe"), file=sys.stderr)
     args = ["bash.exe", command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
