@@ -2,18 +2,19 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Dict, List, NamedTuple, Union
 
 
 class Command(NamedTuple):
-    path: str
+    path: Path
     tag: str
     args: List[str]
     env: Dict[str, str]
 
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
-    args = ['./' + command.path] + command.args
+    args = [command.path.absolute()] + command.args
     env = dict(os.environ)
     env.update(command.env)
     if block:
@@ -78,7 +79,7 @@ def _main(path: str) -> None:
         instructions = json.load(f)
 
     commands = [
-        Command(blob["path"], blob["tag"], blob["args"], blob["env"])
+        Command(Path(blob["path"]), blob["tag"], blob["args"], blob["env"])
         for blob in instructions["commands"]
     ]
     parallel = instructions["jobs"] == 0
