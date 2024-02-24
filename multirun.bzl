@@ -108,6 +108,7 @@ def _multirun_impl(ctx):
         print_command = ctx.attr.print_command,
         keep_going = ctx.attr.keep_going,
         buffer_output = ctx.attr.buffer_output,
+        workspace_name = ctx.workspace_name,
     )
     ctx.actions.write(
         output = instructions_file,

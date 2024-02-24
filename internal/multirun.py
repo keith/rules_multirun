@@ -11,21 +11,19 @@ _R = runfiles.Create()
 
 
 class Command(NamedTuple):
-    path: Path
+    path: str
     tag: str
     args: List[str]
     env: Dict[str, str]
 
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
-    script_path = _R.Rlocation(
-        str("_main" / command.path)
-    )
-    args = [script_path] + command.args
+    args = [command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
     if block:
         try:
+            print(f"Running {command.path} with args {args}", file=sys.stderr)
             return subprocess.check_call(args, env=env)
         except FileNotFoundError:
             print(f"Error: {command.path} not found {args}", file=sys.stderr)
@@ -81,12 +79,18 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
     return success
 
 
+def _script_path(workspace_name: str, path: str) -> Path:
+    return _R.Rlocation(
+        os.path.join(workspace_name, path)
+    )
+
 def _main(path: str) -> None:
     with open(path) as f:
         instructions = json.load(f)
 
+    workspace_name = instructions["workspace_name"]
     commands = [
-        Command(Path(blob["path"]), blob["tag"], blob["args"], blob["env"])
+        Command(_script_path(workspace_name, blob["path"]), blob["tag"], blob["args"], blob["env"])
         for blob in instructions["commands"]
     ]
     parallel = instructions["jobs"] == 0
