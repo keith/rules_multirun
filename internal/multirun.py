@@ -4,7 +4,6 @@ import shutil
 import subprocess
 import sys
 import platform
-from pathlib import Path
 from typing import Dict, List, NamedTuple, Union
 
 from python.runfiles import runfiles
@@ -24,7 +23,6 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
         args = [shutil.which("bash.exe"), "-c", f'{command.path} "$@"', "--"] + command.args
     else:
         args = [command.path] + command.args
-    assert os.path.exists(command.path)
     env = dict(os.environ)
     env.update(command.env)
     if block:
