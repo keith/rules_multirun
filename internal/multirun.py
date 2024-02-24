@@ -79,10 +79,12 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
     return success
 
 
-def _script_path(workspace_name: str, path: str) -> Path:
-    return _R.Rlocation(
+def _script_path(workspace_name: str, path: str) -> str:
+    resolved_path = _R.Rlocation(
         os.path.join(workspace_name, path)
     )
+    assert resolved_path and os.path.exists(resolved_path), f"Path {path} does not exist: {resolved_path}"
+    return resolved_path
 
 def _main(path: str) -> None:
     with open(path) as f:
