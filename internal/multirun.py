@@ -23,6 +23,8 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
     print(shutil.which("bash"), file=sys.stderr)
     print(shutil.which("bash.exe"), file=sys.stderr)
     args = [shutil.which("bash.exe"), command.path] + command.args
+    assert os.path.exists(command.path)
+    print("is exec? ", os.access(command.path, os.X_OK), file=sys.stderr)
     env = dict(os.environ)
     env.update(command.env)
     if block:
