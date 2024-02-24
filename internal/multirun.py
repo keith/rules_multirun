@@ -17,6 +17,7 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
     print(os.listdir("."))
     print(os.listdir("tests"))
     args = [command.path.absolute()] + command.args
+    assert command.path.exists(), f"Error: {command.path} not found"
     env = dict(os.environ)
     env.update(command.env)
     if block:
