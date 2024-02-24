@@ -14,6 +14,8 @@ class Command(NamedTuple):
 
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
+    print(os.listdir("."))
+    print(os.listdir("tests"))
     args = [command.path.absolute()] + command.args
     env = dict(os.environ)
     env.update(command.env)
