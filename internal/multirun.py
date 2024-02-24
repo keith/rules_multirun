@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import sys
+import platform
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Union
 
@@ -19,12 +20,11 @@ class Command(NamedTuple):
 
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
-    print(os.environ, file=sys.stderr)
-    print(shutil.which("bash"), file=sys.stderr)
-    print(shutil.which("bash.exe"), file=sys.stderr)
-    args = [shutil.which("bash.exe"), "-c", f'{command.path} "$@"', "--"] + command.args
+    if platform.system() == "Windows":
+        args = [shutil.which("bash.exe"), "-c", f'{command.path} "$@"', "--"] + command.args
+    else:
+        args = [command.path] + command.args
     assert os.path.exists(command.path)
-    print("is exec? ", os.access(command.path, os.X_OK), file=sys.stderr)
     env = dict(os.environ)
     env.update(command.env)
     if block:
@@ -86,34 +86,13 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
 
 
 def _script_path(workspace_name: str, path: str) -> str:
-    print("checking ", os.path.join(workspace_name, path), file=sys.stderr)
-    print("maybe should check checking ", f"{workspace_name}/{path}", file=sys.stderr)
-    b = f"{workspace_name}/{path}"
-    resolved_path2 = _R.Rlocation( b)
-    if resolved_path2 and os.path.exists(resolved_path2):
-        print("resolved path 2 exists", resolved_path2, file=sys.stderr)
-        return resolved_path2
-    print("no resolved path 2", resolved_path2, file=sys.stderr)
-    resolved_path = _R.Rlocation(
-        os.path.join(workspace_name, path)
-    )
-    assert resolved_path and os.path.exists(resolved_path), f"Path {path} does not exist: {resolved_path}"
-    raise ValueError(f"Path {path} does not exist: {resolved_path}")
-    return resolved_path
+    return _R.Rlocation(f"{workspace_name}/{path}")
 
 def _main(path: str) -> None:
     with open(path) as f:
         instructions = json.load(f)
 
     workspace_name = instructions["workspace_name"]
-    for d in _R.EnvVars().values():
-        d = os.path.join(d, workspace_name)
-        if os.path.isdir(d):
-            print(f"Found dir: {d}")
-            print(os.listdir(d))
-        else:
-            print("not dir ", d)
-
     commands = [
         Command(_script_path(workspace_name, blob["path"]), blob["tag"], blob["args"], blob["env"])
         for blob in instructions["commands"]

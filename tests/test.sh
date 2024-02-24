@@ -1,9 +1,6 @@
 #!/bin/bash
 
 set -euo pipefail
-echo $0
-echo $@
-env
 
 # --- begin runfiles.bash initialization v2 ---
 # Copy-pasted from the Bazel Bash runfiles library v2.
