@@ -80,24 +80,34 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
 
 
 def _script_path(workspace_name: str, path: str) -> str:
+    print("checking ", os.path.join(workspace_name, path))
+    print("maybe should check checking ", f"{workspace_name}/{path}")
+    b = f"{workspace_name}/{path}"
+    resolved_path2 = _R.Rlocation( b)
+    if resolved_path2 and os.path.exists(resolved_path2):
+        print("resolved path 2 exists", resolved_path2)
+        return resolved_path2
+    print("no resolved path 2", resolved_path2)
     resolved_path = _R.Rlocation(
         os.path.join(workspace_name, path)
     )
     assert resolved_path and os.path.exists(resolved_path), f"Path {path} does not exist: {resolved_path}"
+    raise ValueError(f"Path {path} does not exist: {resolved_path}")
     return resolved_path
 
 def _main(path: str) -> None:
     with open(path) as f:
         instructions = json.load(f)
 
+    workspace_name = instructions["workspace_name"]
     for d in _R.EnvVars().values():
+        d = os.path.join(d, workspace_name)
         if os.path.isdir(d):
             print(f"Found dir: {d}")
             print(os.listdir(d))
         else:
             print("not dir ", d)
 
-    workspace_name = instructions["workspace_name"]
     commands = [
         Command(_script_path(workspace_name, blob["path"]), blob["tag"], blob["args"], blob["env"])
         for blob in instructions["commands"]
