@@ -7,4 +7,8 @@ build --remote_timeout=3600
 build --host_per_file_copt="external/.*protobuf.*@-Wno-everything"
 build --per_file_copt="external/.*protobuf.*@-Wno-everything"
 
+# TODO: Remove once stardoc's zlib doesn't have warnings
+build --host_per_file_copt="external/.*zlib.*@-Wno-everything"
+build --per_file_copt="external/.*zlib.*@-Wno-everything"
+
 test --test_output=errors
