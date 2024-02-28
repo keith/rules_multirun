@@ -13,23 +13,21 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
+      - run: USE_BAZEL_VERSION=6.x bazelisk test //...
+      - run: bazelisk test //... --enable_bzlmod=false
       - run: bazelisk test //...
       - run: USE_BAZEL_VERSION=rolling bazelisk test //...
       - run: USE_BAZEL_VERSION=last_green bazelisk test //...
-      - run: bazelisk test //... --enable_bzlmod
-      - run: USE_BAZEL_VERSION=rolling bazelisk test //... --enable_bzlmod
-      - run: USE_BAZEL_VERSION=last_green bazelisk test //... --enable_bzlmod
 
   ubuntu_test:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
+      - run: USE_BAZEL_VERSION=6.x bazelisk test //...
+      - run: bazelisk test //... --enable_bzlmod=false
       - run: bazelisk test //...
       - run: USE_BAZEL_VERSION=rolling bazelisk test //...
       - run: USE_BAZEL_VERSION=last_green bazelisk test //...
-      - run: bazelisk test //... --enable_bzlmod
-      - run: USE_BAZEL_VERSION=rolling bazelisk test //... --enable_bzlmod
-      - run: USE_BAZEL_VERSION=last_green bazelisk test //... --enable_bzlmod
 
   windows_test:
     runs-on: windows-latest
