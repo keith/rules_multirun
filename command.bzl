@@ -8,6 +8,7 @@ load(
     "//internal:constants.bzl",
     "CommandInfo",
     "RUNFILES_PREFIX",
+    "rlocation_path",
     "update_attrs",
 )
 
@@ -19,16 +20,6 @@ _force_opt = transition(
     inputs = [],
     outputs = ["//command_line_option:compilation_mode"],
 )
-
-def _rlocation_path(ctx, file):
-    """Produce the rlocation lookup path for the given file.
-
-    See https://github.com/bazelbuild/bazel-skylib/issues/303.
-    """
-    if file.short_path.startswith("../"):
-        return file.short_path[3:]
-    else:
-        return ctx.workspace_name + "/" + file.short_path
 
 def _command_impl(ctx):
     runfiles = ctx.runfiles().merge(ctx.attr._bash_runfiles[DefaultInfo].default_runfiles)
@@ -56,7 +47,7 @@ def _command_impl(ctx):
         "%s" % shell.quote(ctx.expand_location(v, targets = expansion_targets))
         for v in ctx.attr.arguments
     ]
-    command_exec = " ".join(["exec $(rlocation %s)" % shell.quote(_rlocation_path(ctx, executable))] + str_args + ['"$@"\n'])
+    command_exec = " ".join(["exec $(rlocation %s)" % shell.quote(rlocation_path(ctx, executable))] + str_args + ['"$@"\n'])
 
     out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
     ctx.actions.write(

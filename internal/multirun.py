@@ -1,8 +1,14 @@
 import json
 import os
+import shutil
 import subprocess
 import sys
+import platform
 from typing import Dict, List, NamedTuple, Union
+
+from python.runfiles import runfiles
+
+_R = runfiles.Create()
 
 
 class Command(NamedTuple):
@@ -13,7 +19,14 @@ class Command(NamedTuple):
 
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
-    args = ['./' + command.path] + command.args
+    if platform.system() == "Windows":
+        bash = shutil.which("bash.exe")
+        if not bash:
+            raise SystemExit("error: bash.exe not found in PATH")
+
+        args = [bash, "-c", f'{command.path} "$@"', "--"] + command.args
+    else:
+        args = [command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
     if block:
@@ -69,12 +82,17 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
     return success
 
 
+def _script_path(workspace_name: str, path: str) -> str:
+    # Even on Windows runfiles require forward slashes.
+    return _R.Rlocation(f"{workspace_name}/{path}")
+
 def _main(path: str) -> None:
     with open(path) as f:
         instructions = json.load(f)
 
+    workspace_name = instructions["workspace_name"]
     commands = [
-        Command(blob["path"], blob["tag"], blob["args"], blob["env"])
+        Command(_script_path(workspace_name, blob["path"]), blob["tag"], blob["args"], blob["env"])
         for blob in instructions["commands"]
     ]
     parallel = instructions["jobs"] == 0

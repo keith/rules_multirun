@@ -6,6 +6,9 @@ py_binary(
     srcs = ["multirun.py"],
     python_version = "PY3",
     visibility = ["//visibility:public"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
 )
 
 bzl_library(
