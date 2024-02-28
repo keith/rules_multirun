@@ -84,7 +84,10 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
 
 def _script_path(workspace_name: str, path: str) -> str:
     # Even on Windows runfiles require forward slashes.
-    return _R.Rlocation(f"{workspace_name}/{path}")
+    if path.startswith("../"):
+        return _R.Rlocation(path[3:])
+    else:
+        return _R.Rlocation(f"{workspace_name}/{path}")
 
 def _main(path: str) -> None:
     with open(path) as f:
