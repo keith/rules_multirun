@@ -118,7 +118,7 @@ def _multirun_impl(ctx):
     script = """\
 multirun_script="$(rlocation {})"
 instructions="$(rlocation {})"
-exec "$multirun_script" -f "$instructions"
+exec "$multirun_script" "$instructions" "$@"
 """.format(shell.quote(rlocation_path(ctx, runner_exe)), shell.quote(rlocation_path(ctx, instructions_file)))
     out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
     ctx.actions.write(

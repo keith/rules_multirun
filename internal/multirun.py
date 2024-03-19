@@ -109,4 +109,4 @@ def _main(path: str) -> None:
 
 
 if __name__ == "__main__":
-    _main(sys.argv[-1])
+    _main(sys.argv[1])
