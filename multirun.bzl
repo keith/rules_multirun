@@ -27,7 +27,7 @@ def _binary_args_env_aspect_impl(target, ctx):
     env = getattr(ctx.rule.attr, "env", {})
 
     if is_executable and (args or env):
-        expansion_targets = getattr(ctx.rule.attr, "data")
+        expansion_targets = getattr(ctx.rule.attr, "data", [])
         if expansion_targets:
             args = [
                 ctx.expand_location(arg, expansion_targets)
