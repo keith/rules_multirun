@@ -18,7 +18,7 @@ trap 'rm -rf -- "$WORKDIR"' EXIT
 cd "$WORKDIR"
 
 if [[ $# != 1 ]]; then
-  echo "error: expected one argument, got $#"
+  echo "error: expected one argument, got $#: $@"
   exit 1
 fi
 
