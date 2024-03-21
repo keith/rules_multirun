@@ -112,7 +112,7 @@ def _multirun_impl(ctx):
     )
     ctx.actions.write(
         output = instructions_file,
-        content = instructions.to_json(),
+        content = json.encode(instructions),
     )
 
     script = """\
