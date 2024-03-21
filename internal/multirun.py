@@ -89,13 +89,15 @@ def _script_path(workspace_name: str, path: str) -> str:
     else:
         return _R.Rlocation(f"{workspace_name}/{path}")
 
+
 def _main(path: str) -> None:
     with open(path) as f:
         instructions = json.load(f)
 
     workspace_name = instructions["workspace_name"]
     commands = [
-        Command(_script_path(workspace_name, blob["path"]), blob["tag"], blob["args"], blob["env"])
+        Command(_script_path(workspace_name, blob["path"]), blob["tag"],
+                blob["args"] + (sys.argv[2:] if len(sys.argv) > 2 else []), blob["env"])
         for blob in instructions["commands"]
     ]
     parallel = instructions["jobs"] == 0
@@ -109,4 +111,4 @@ def _main(path: str) -> None:
 
 
 if __name__ == "__main__":
-    _main(sys.argv[-1])
+    _main(sys.argv[1])
