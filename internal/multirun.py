@@ -65,6 +65,7 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
     except KeyboardInterrupt:
         for command, process in processes:
             process.kill()
+            process.wait()
 
     return success
 
