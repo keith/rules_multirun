@@ -78,6 +78,8 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
                 success = False
             else:
                 return False
+        except KeyboardInterrupt:
+            return True
 
     return success
 
