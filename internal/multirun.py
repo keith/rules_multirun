@@ -50,17 +50,21 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
     ]
 
     success = True
-    for command, process in processes:
-        process.wait()
-        if print_command and buffer_output:
-            print(command.tag, flush=True)
+    try:
+        for command, process in processes:
+            process.wait()
+            if print_command and buffer_output:
+                print(command.tag, flush=True)
 
-        stdout = process.communicate()[0]
-        if stdout:
-            print(stdout.decode().strip(), flush=True)
+            stdout = process.communicate()[0]
+            if stdout:
+                print(stdout.decode().strip(), flush=True)
 
-        if process.returncode != 0:
-            success = False
+            if process.returncode != 0:
+                success = False
+    except KeyboardInterrupt:
+        for command, process in processes:
+            process.kill()
 
     return success
 
