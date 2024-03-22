@@ -66,6 +66,7 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
         for command, process in processes:
             process.kill()
             process.wait()
+        success = False
 
     return success
 
@@ -84,7 +85,7 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
             else:
                 return False
         except KeyboardInterrupt:
-            return True
+            return False
 
     return success
 
