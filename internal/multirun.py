@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 import platform
+from multiprocessing.pool import ThreadPool
 from typing import Dict, List, NamedTuple, Union
 
 from python.runfiles import runfiles
@@ -18,7 +19,7 @@ class Command(NamedTuple):
     env: Dict[str, str]
 
 
-def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
+def _run_command(command: Command, check_call: bool, started_processes: List[subprocess.Popen], **kwargs) -> Union[int, subprocess.Popen]:
     if platform.system() == "Windows":
         bash = shutil.which("bash.exe")
         if not bash:
@@ -29,13 +30,16 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
         args = [command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
-    if block:
+    if check_call:
         return subprocess.check_call(args, env=env)
     else:
-        return subprocess.Popen(args, env=env, **kwargs)
+        p = subprocess.Popen(args, env=env, **kwargs)
+        started_processes.append(p)
+        p.wait()
+        return p
 
 
-def _perform_concurrently(commands: List[Command], print_command: bool, buffer_output: bool) -> bool:
+def _perform_concurrently(commands: List[Command], concurrency: int, print_command: bool, buffer_output: bool) -> bool:
     kwargs = {}
     if buffer_output:
         kwargs = {
@@ -43,32 +47,34 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
              "stderr" : subprocess.STDOUT
         }
 
-    processes = [
-        (command, _run_command(command, block=False, **kwargs))
-        for command
-        in commands
-    ]
+    with ThreadPool(concurrency) as tp:
+        started_processes = []
+        results = [
+            (command, tp.apply_async(_run_command, args=(command, False, started_processes), kwds=kwargs))
+            for command
+            in commands
+        ]
 
-    success = True
-    try:
-        for command, process in processes:
-            process.wait()
-            if print_command and buffer_output:
-                print(command.tag, flush=True)
+        success = True
+        try:
+            for command, result in results:
+                process = result.get()
+                if print_command and buffer_output:
+                    print(command.tag, flush=True)
 
-            stdout = process.communicate()[0]
-            if stdout:
-                print(stdout.decode().strip(), flush=True)
+                stdout = process.communicate()[0]
+                if stdout:
+                    print(stdout.decode().strip(), flush=True)
 
-            if process.returncode != 0:
-                success = False
-    except KeyboardInterrupt:
-        for command, process in processes:
-            process.kill()
-            process.wait()
-        success = False
+                if process.returncode != 0:
+                    success = False
+        except KeyboardInterrupt:
+            for process in started_processes:
+                process.kill()
+                process.wait()
+            success = False
 
-    return success
+        return success
 
 
 def _perform_serially(commands: List[Command], print_command: bool, keep_going: bool) -> bool:
@@ -78,7 +84,7 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
             print(command.tag, flush=True)
 
         try:
-            _run_command(command, block=True)
+            _run_command(command, True, [])
         except subprocess.CalledProcessError:
             if keep_going:
                 success = False
@@ -108,12 +114,12 @@ def _main(instructions_path: str, extra_args: List[str]) -> None:
                 blob["args"] + extra_args, blob["env"])
         for blob in instructions["commands"]
     ]
-    parallel = instructions["jobs"] == 0
+    concurrency = len(commands) if instructions["jobs"] == 0 else instructions["jobs"]
     print_command: bool = instructions["print_command"]
-    if parallel:
-        success = _perform_concurrently(commands, print_command, instructions["buffer_output"])
-    else:
+    if concurrency == 1:
         success = _perform_serially(commands, print_command, instructions["keep_going"])
+    else:
+        success = _perform_concurrently(commands, concurrency, print_command, instructions["buffer_output"])
 
     sys.exit(0 if success else 1)
 
