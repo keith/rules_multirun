@@ -45,6 +45,13 @@ if [[ -n "$parallel_output" ]]; then
   exit 1
 fi
 
+script="$(rlocation rules_multirun/tests/multirun_parallel_limited_concurrency.bash)"
+parallel_output="$($script)"
+if [[ "$output" != "hello" ]]; then
+  echo "Expected 'hello', got '$output'"
+  exit 1
+fi
+
 script="$(rlocation rules_multirun/tests/multirun_parallel_no_buffer.bash)"
 parallel_output="$($script)"
 if [[ -n "$parallel_output" ]]; then
