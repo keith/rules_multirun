@@ -5,7 +5,7 @@ import subprocess
 import sys
 import platform
 from multiprocessing.pool import ThreadPool
-from typing import Dict, List, NamedTuple, Union
+from typing import Dict, List, NamedTuple, Tuple, Union
 
 from python.runfiles import runfiles
 
@@ -19,7 +19,12 @@ class Command(NamedTuple):
     env: Dict[str, str]
 
 
-def _run_command(command: Command, check_call: bool, started_processes: List[subprocess.Popen], **kwargs) -> Union[int, subprocess.Popen]:
+def _run_command(
+    command: Command,
+    check_call: bool,
+    started_processes: List[subprocess.Popen],
+    **kwargs,
+) -> Union[int, Tuple[subprocess.Popen, bytes, bytes]]:
     if platform.system() == "Windows":
         bash = shutil.which("bash.exe")
         if not bash:
@@ -35,8 +40,8 @@ def _run_command(command: Command, check_call: bool, started_processes: List[sub
     else:
         p = subprocess.Popen(args, env=env, **kwargs)
         started_processes.append(p)
-        p.wait()
-        return p
+        stdout, stderr = p.communicate()
+        return p, stdout, stderr
 
 
 def _perform_concurrently(commands: List[Command], concurrency: int, print_command: bool, buffer_output: bool) -> bool:
@@ -58,11 +63,10 @@ def _perform_concurrently(commands: List[Command], concurrency: int, print_comma
         success = True
         try:
             for command, result in results:
-                process = result.get()
+                process, stdout, _ = result.get()
                 if print_command and buffer_output:
                     print(command.tag, flush=True)
 
-                stdout = process.communicate()[0]
                 if stdout:
                     print(stdout.decode().strip(), flush=True)
 
