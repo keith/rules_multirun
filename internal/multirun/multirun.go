@@ -15,76 +15,64 @@ import (
     "sync"
     "syscall"
 
-	"github.com/bazelbuild/rules_go/go/runfiles"
+    "github.com/bazelbuild/rules_go/go/runfiles"
 )
 
 func runfile(path string) (string, error) {
-	fullPath, err1 := runfiles.Rlocation(path)
-	if err1 != nil {
-		strippedPath := strings.SplitN(path, "/", 2)[1]
-		fullPath2, err2 := runfiles.Rlocation(strippedPath)
-		if err2 != nil {
-			fmt.Fprintf(os.Stderr, "Failed to lookup runfile for %s %s\n", path, err1.Error())
-			fmt.Fprintf(os.Stderr, "also tried %s %s\n", strippedPath, err2.Error())
-			return "", err1
-		}
-		fullPath = fullPath2
-	}
-	return fullPath, nil
+    fullPath, err1 := runfiles.Rlocation(path)
+    if err1 != nil {
+        // This block may not be needed now we are using the latest
+        // runfiles library, try without
+        strippedPath := strings.SplitN(path, "/", 2)[1]
+        fullPath2, err2 := runfiles.Rlocation(strippedPath)
+        if err2 != nil {
+            fmt.Fprintf(os.Stderr, "Failed to lookup runfile for %s %s\n", path, err1.Error())
+            fmt.Fprintf(os.Stderr, "also tried %s %s\n", strippedPath, err2.Error())
+            return "", err1
+        }
+        fullPath = fullPath2
+    }
+    return fullPath, nil
 }
 
 func debugEnv() {
-	env := os.Environ()
-	for _, e := range env {
+    env := os.Environ()
+    for _, e := range env {
         if strings.HasPrefix(e, "RUNFILES_") || strings.HasPrefix(e, "BUILD_") || strings.HasPrefix(e, "TEST_") {
-                fmt.Println(e)
+            fmt.Println(e)
         }
     }
 
     manifest := os.Getenv("RUNFILES_MANIFEST_FILE")
     fmt.Println("RUNFILES_MANIFEST_FILE="+manifest)
-
-	// Check that the files can be listed.
-	//entries, _ := ListRunfiles()
-	//for _, e := range entries {
-	//		fmt.Println(e.ShortPath, e.Path)
-	//}
 }
 
 type Command struct {
-	Tag string `json:"tag"`
-	Path string `json:"path"`
-	Args []string `json:"args"`
-	Env map[string]string `json:"env"`
+    Tag string `json:"tag"`
+    Path string `json:"path"`
+    Args []string `json:"args"`
+    Env map[string]string `json:"env"`
 }
 
 type Instructions struct {
-	Commands []Command `json:"commands"`
-	Jobs int `json:"jobs"`
+    Commands []Command `json:"commands"`
+    Jobs int `json:"jobs"`
     Print_command bool `json:"print_command"`
-	Keep_going bool `json:"keep_going"`
+    Keep_going bool `json:"keep_going"`
     Buffer_output bool `json:"buffer_output"`
     Verbose bool `json:"verbose"`
 }
 
 func readInstructions(instructionsFile string) (Instructions, error) {
-	content, err := ioutil.ReadFile(instructionsFile)
-	if err != nil {
-		return Instructions{}, fmt.Errorf("failed to read instructions file %q: %v", instructionsFile, err)
-	}
-	var instr Instructions
-	if err = json.Unmarshal(content, &instr); err != nil {
-		return Instructions{}, fmt.Errorf("failed to parse file %q as JSON: %v", instructionsFile, err)
-	}
-	return instr, nil
-}
-
-// scriptPath constructs the script path based on the workspace name and the relative path.
-func scriptPath(workspaceName, path string) string {
-    if filepath.IsAbs(path) {
-        return path
+    content, err := ioutil.ReadFile(instructionsFile)
+    if err != nil {
+        return Instructions{}, fmt.Errorf("failed to read instructions file %q: %v", instructionsFile, err)
     }
-    return filepath.Join(workspaceName, path)
+    var instr Instructions
+    if err = json.Unmarshal(content, &instr); err != nil {
+        return Instructions{}, fmt.Errorf("failed to parse file %q as JSON: %v", instructionsFile, err)
+    }
+    return instr, nil
 }
 
 func runCommand(command Command, bufferOutput bool, verbose bool) (int, string, error) {
@@ -96,8 +84,8 @@ func runCommand(command Command, bufferOutput bool, verbose bool) (int, string, 
     }
 
     if verbose {
-		cmdStr := command.Path + " " + strings.Join(args, " ")
-		fmt.Println("Command line: ", cmdStr)
+        cmdStr := command.Path + " " + strings.Join(args, " ")
+        fmt.Println("Command line: ", cmdStr)
     }
     cmd = exec.Command(command.Path, args...)
     cmd.Env = env
@@ -174,7 +162,7 @@ func performSerially(commands []Command, printCommand bool, keepGoing bool, verb
             fmt.Println(cmd.Tag)
         }
 
-        // Serial always buffers output, regardless of setting in json
+        // Serial always discards output, regardless of setting in json
         bufferOutput := false
         code, _, err := runCommand(cmd, bufferOutput, verbose)
         if code != 0 || err != nil {
@@ -184,8 +172,6 @@ func performSerially(commands []Command, printCommand bool, keepGoing bool, verb
                 return false
             }
         }
-
-        //fmt.Println(output)
     }
     return success
 }
@@ -193,17 +179,20 @@ func performSerially(commands []Command, printCommand bool, keepGoing bool, verb
 // cancelOnInterrupt calls f when os.Interrupt or SIGTERM is received.
 // It ignores subsequent interrupts on purpose - program should exit correctly after the first signal.
 func cancelOnInterrupt(ctx context.Context, f context.CancelFunc) {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		select {
-		case <-ctx.Done():
-		case <-c:
-			f()
-		}
-	}()
+    c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+    go func() {
+        select {
+        case <-ctx.Done():
+        case <-c:
+            f()
+        }
+    }()
 }
 
+// As we are invoked via symlink, on linux os.Executable() doesn't tell us the
+// executable we were invoked as. Use pwd and args[0] to
+// reconstruct the path.
 func invokingExe() (string) {
     if runtime.GOOS == "windows" {
          exe, _ := os.Executable()
@@ -220,13 +209,15 @@ func invokingExe() (string) {
 
 func windowsRunViaBash(command Command) (bool) {
     if runtime.GOOS == "windows" {
-		if (strings.HasSuffix(command.Path, ".bash") || strings.HasSuffix(command.Path, ".bash")) {
-			return true
-		}
-	}
-	return false
+        if (strings.HasSuffix(command.Path, ".bash") || strings.HasSuffix(command.Path, ".bash")) {
+            return true
+        }
+    }
+    return false
 }
 
+// Resolve runfiles and rewrite bash commands on windows to execute
+// via bash -c
 func resolveCommands(commands []Command) ([]Command) {
     var out []Command
     bashPath := ""
@@ -257,13 +248,13 @@ func resolveCommands(commands []Command) ([]Command) {
 
 func main() {
     verbose := os.Getenv("MULTIRUN_VERBOSE") != ""
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	cancelOnInterrupt(ctx, cancelFunc)
+    ctx, cancelFunc := context.WithCancel(context.Background())
+    defer cancelFunc()
+    cancelOnInterrupt(ctx, cancelFunc)
 
-	// Because we are invoked via a symlink, we cannot accept any command line args
-	// The instructions file is always adjacent to the symlink location
-	exe := invokingExe()
+    // Because we are invoked via a symlink, we cannot accept any command line args
+    // The instructions file is always adjacent to the symlink location
+    exe := invokingExe()
 
     // We must only set runfiles env if it isn't already set
     if val := os.Getenv("RUNFILES_MANIFEST_FILE"); val == "" {
@@ -279,13 +270,13 @@ func main() {
         }
     }
 
-	basePath, _ := strings.CutSuffix(exe, ".exe")
-	instructionsFile := basePath + ".json"
-	instr, err := readInstructions(instructionsFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%+v\n", err)
-		os.Exit(1)
-	}
+    basePath, _ := strings.CutSuffix(exe, ".exe")
+    instructionsFile := basePath + ".json"
+    instr, err := readInstructions(instructionsFile)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "%+v\n", err)
+        os.Exit(1)
+    }
 
     parallel := instr.Jobs != 1
     printCommand := instr.Print_command
