@@ -8,9 +8,25 @@ load(
     "//internal:constants.bzl",
     "CommandInfo",
     "RUNFILES_PREFIX",
-    "rlocation_path",
     "update_attrs",
 )
+load("//internal/bazel-lib:windows_utils.bzl", "BATCH_RLOCATION_FUNCTION")
+load("@aspect_bazel_lib//lib:paths.bzl", "BASH_RLOCATION_FUNCTION", "to_rlocation_path")
+
+_COMMAND_LAUNCHER_BAT_TMPL = """@echo off
+SETLOCAL ENABLEEXTENSIONS
+SETLOCAL ENABLEDELAYEDEXPANSION
+set RUNFILES_LIB_DEBUG=0
+{BATCH_RLOCATION_FUNCTION}
+{envs}
+
+call :rlocation "{command}" command_path
+::echo rlocation({command}) returns %command_path%
+::echo command bat launcher
+::echo RUNFILES_MANIFEST_FILE=!RUNFILES_MANIFEST_FILE!
+::echo launching: {exec}%command_path% {args}
+{exec}%command_path% {args}
+"""
 
 def _force_opt_impl(_settings, _attr):
     return {"//command_line_option:compilation_mode": "opt"}
@@ -22,45 +38,65 @@ _force_opt = transition(
 )
 
 def _command_impl(ctx):
-    runfiles = ctx.runfiles().merge(ctx.attr._bash_runfiles[DefaultInfo].default_runfiles)
-
-    for data_dep in ctx.attr.data:
-        default_runfiles = data_dep[DefaultInfo].default_runfiles
-        if default_runfiles != None:
-            runfiles = runfiles.merge(default_runfiles)
-
+    is_windows = ctx.target_platform_has_constraint(ctx.attr._windows_constraint[platform_common.ConstraintValueInfo])
     command = ctx.attr.command if type(ctx.attr.command) == "Target" else ctx.attr.command[0]
-    default_info = command[DefaultInfo]
-    executable = default_info.files_to_run.executable
-
-    default_runfiles = default_info.default_runfiles
-    if default_runfiles != None:
-        runfiles = runfiles.merge(default_runfiles)
+    executable = command[DefaultInfo].files_to_run.executable
 
     expansion_targets = ctx.attr.data
+    shell_type = "bash" if not is_windows or executable.extension in ["bash", "sh"] else "cmd"
+    if (shell_type == "bash"):
+        str_args = [
+            "%s" % shell.quote(ctx.expand_location(v, targets = expansion_targets))
+            for v in ctx.attr.arguments
+        ]
+    else:
+        str_args = [
+            "%s" % shell.quote(ctx.expand_location(v, targets = expansion_targets))
+            for v in ctx.attr.arguments
+        ]
 
-    str_env = [
-        "export %s=%s" % (k, shell.quote(ctx.expand_location(v, targets = expansion_targets)))
-        for k, v in ctx.attr.environment.items()
-    ]
-    str_args = [
-        "%s" % shell.quote(ctx.expand_location(v, targets = expansion_targets))
-        for v in ctx.attr.arguments
-    ]
-    command_exec = " ".join(["exec $(rlocation %s)" % shell.quote(rlocation_path(ctx, executable))] + str_args + ['"$@"\n'])
+    if not is_windows:    
+        str_env = [
+            "export %s=%s" % (k, shell.quote(ctx.expand_location(v, targets = expansion_targets)))
+            for k, v in ctx.attr.environment.items()
+        ]
+        command_exec = " ".join(["exec $(rlocation %s)" % shell.quote(to_rlocation_path(ctx, executable))] + str_args + ['"$@"\n'])
+        #print(command_exec)
+        launcher = ctx.actions.declare_file(ctx.label.name + ".bash")
+        ctx.actions.write(
+            output = launcher,
+            content = "\n".join([RUNFILES_PREFIX] + str_env + [command_exec]),
+            is_executable = True,
+        )
+    else:
+        str_env = [
+            "set \"%s=%s\"" % (k, ctx.expand_location(v, targets = expansion_targets))
+            for k, v in ctx.attr.environment.items()
+        ]
+        launcher = ctx.actions.declare_file(ctx.label.name + ".bat")
+        ctx.actions.write(
+            output = launcher,
+            content = _COMMAND_LAUNCHER_BAT_TMPL.format(
+                envs = "\n".join(str_env),
+                exec = "%BAZEL_SH% " if shell_type == "bash" else "",
+                command = to_rlocation_path(ctx, executable),
+                args = " ".join(str_args),
+                BATCH_RLOCATION_FUNCTION = BATCH_RLOCATION_FUNCTION,
+            ),
+            is_executable = True,
+        )
 
-    out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
-    ctx.actions.write(
-        output = out_file,
-        content = "\n".join([RUNFILES_PREFIX] + str_env + [command_exec]),
-        is_executable = True,
-    )
+    runfiles = ctx.runfiles(files = ctx.files.data + ctx.files._bash_runfiles + [executable])
+    runfiles = runfiles.merge_all([
+        d[DefaultInfo].default_runfiles
+        for d in ctx.attr.data + [command]
+    ])
 
     providers = [
         DefaultInfo(
-            files = depset([out_file]),
-            runfiles = runfiles.merge(ctx.runfiles(files = ctx.files.data + [executable])),
-            executable = out_file,
+            files = depset([launcher]),
+            runfiles = runfiles,
+            executable = launcher,
         ),
     ]
 
@@ -108,6 +144,9 @@ def command_with_transition(cfg, allowlist = None, doc = None):
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
+        ),
+        "_windows_constraint": attr.label(
+            default = "@platforms//os:windows"
         ),
     }
 

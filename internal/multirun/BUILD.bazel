@@ -1,0 +1,21 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "multirun-lib",
+    srcs = [
+        "multirun.go",
+    ],
+    #importpath = "github.com/keith/rules_multirun/multirun",
+    deps = ["@rules_go//go/runfiles"],
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "multirun",
+    embed = [":multirun-lib"],
+    msan = "off",
+    #pure = "off",
+    race = "off",
+    static = "off",
+    visibility = ["//visibility:public"],
+)

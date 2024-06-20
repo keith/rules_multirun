@@ -5,11 +5,26 @@ module(
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.4.2")
-bazel_dep(name = "rules_python", version = "0.27.1")
+bazel_dep(name = "platforms", version = "0.0.9")
+bazel_dep(name = "aspect_bazel_lib", version = "2.7.7")
 
 bazel_dep(
     name = "stardoc",
     version = "0.6.2",
     dev_dependency = True,
     repo_name = "io_bazel_stardoc",
+)
+
+# Hermetic go toolchain
+bazel_dep(name = "rules_go", version = "0.47.1", dev_dependency = True)
+bazel_dep(name = "gazelle", version = "0.36.0", dev_dependency = True)
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(
+    version = "1.22.3",
+    # explicitly specify SDK names/checksums to avoid a query which fails in airgapped builds
+    # to update this, view checksums at https://go.dev/dl/?mode=json&include=all
+    sdks = {
+        "linux_amd64": ("go1.22.3.linux-amd64.tar.gz", "8920ea521bad8f6b7bc377b4824982e011c19af27df88a815e3586ea895f1b36"),
+        "windows_amd64": ("go1.22.3.windows-amd64.zip", "cab2af6951a6e2115824263f6df13ff069c47270f5788714fa1d776f7f60cb39"),
+    },
 )
