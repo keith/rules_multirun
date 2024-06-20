@@ -221,3 +221,30 @@ sh_test(
     ],
     deps = ["@bazel_tools//tools/bash/runfiles"],
 )
+
+sh_test(
+    name = "test2",
+    srcs = ["test2.sh"],
+    data = [
+        ":echo_and_fail_cmd",
+        ":hello",
+        ":hello2",
+        ":multirun_binary_args",
+        ":multirun_binary_args_location",
+        ":multirun_binary_env",
+        ":multirun_parallel",
+        ":multirun_parallel_no_buffer",
+        ":multirun_parallel_with_output",
+        ":multirun_serial",
+        ":multirun_serial_description",
+        ":multirun_serial_keep_going",
+        ":multirun_serial_no_print",
+        ":multirun_with_transition",
+        ":root_multirun",
+        ":validate_args_cmd",
+        ":validate_args_cmd_description",
+        ":validate_chdir_location_cmd",
+        ":validate_env_cmd",
+    ],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+)
