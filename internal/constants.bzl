@@ -2,7 +2,7 @@
 
 # https://github.com/bazelbuild/bazel/blob/4ff441b13db6b6f5d5d317881c6383f510709b19/tools/bash/runfiles/runfiles.bash#L50-L64
 
-RUNFILES_PREFIX = """#!/bin/bash
+RUNFILES_PREFIX = """#!/usr/bin/env bash
 
 # --- begin runfiles.bash initialization v2 ---
 # Copy-pasted from the Bazel Bash runfiles library v2.
