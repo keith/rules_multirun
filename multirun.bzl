@@ -9,9 +9,10 @@ load(
     "//internal:constants.bzl",
     "CommandInfo",
     "RUNFILES_PREFIX",
-    "rlocation_path",
     "update_attrs",
 )
+
+load("@aspect_bazel_lib//lib:paths.bzl", "to_rlocation_path")
 
 _BinaryArgsEnvInfo = provider(
     fields = ["args", "env"],
@@ -45,92 +46,72 @@ _binary_args_env_aspect = aspect(
     implementation = _binary_args_env_aspect_impl,
 )
 
+def _command_exe(command):
+    default_info = command[DefaultInfo]
+    if default_info.files_to_run == None:
+        fail("%s is not executable" % command.label, attr = "commands")
+    exe = default_info.files_to_run.executable
+    if exe == None:
+        fail("%s does not have an executable file" % command.label, attr = "commands")
+    return exe
+
 def _multirun_impl(ctx):
-    instructions_file = ctx.actions.declare_file(ctx.label.name + ".json")
-    runner_info = ctx.attr._runner[DefaultInfo]
-    runner_exe = runner_info.files_to_run.executable
-
-    runfiles = ctx.runfiles(files = [instructions_file, runner_exe])
-    runfiles = runfiles.merge(ctx.attr._bash_runfiles[DefaultInfo].default_runfiles)
-    runfiles = runfiles.merge(runner_info.default_runfiles)
-
-    for data_dep in ctx.attr.data:
-        default_runfiles = data_dep[DefaultInfo].default_runfiles
-        if default_runfiles != None:
-            runfiles = runfiles.merge(default_runfiles)
+    if ctx.attr.jobs < 0:
+        fail("'jobs' attribute should be at least 0")
 
     commands = []
-    tagged_commands = []
-    runfiles_files = []
+    command_executables = []
     for command in ctx.attr.commands:
-        tagged_commands.append(struct(tag = str(command.label), command = command))
-
-    for tag_command in tagged_commands:
-        command = tag_command.command
-
-        default_info = command[DefaultInfo]
-        if default_info.files_to_run == None:
-            fail("%s is not executable" % command.label, attr = "commands")
-        exe = default_info.files_to_run.executable
-        if exe == None:
-            fail("%s does not have an executable file" % command.label, attr = "commands")
-        runfiles_files.append(exe)
-
-        args = []
-        env = {}
-        if _BinaryArgsEnvInfo in command:
-            args = command[_BinaryArgsEnvInfo].args
-            env = command[_BinaryArgsEnvInfo].env
-
-        default_runfiles = default_info.default_runfiles
-        if default_runfiles != None:
-            runfiles = runfiles.merge(default_runfiles)
+        args = command[_BinaryArgsEnvInfo].args if _BinaryArgsEnvInfo in command else []
+        env = command[_BinaryArgsEnvInfo].env if _BinaryArgsEnvInfo in command else {}
+        exe = _command_exe(command)
 
         if CommandInfo in command:
             tag = command[CommandInfo].description
         else:
-            tag = "Running {}".format(tag_command.tag)
+            tag = "Running {}".format(str(command.label))
 
         commands.append(struct(
             tag = tag,
-            path = exe.short_path,
+            path = to_rlocation_path(ctx, exe),
             args = args,
             env = env,
         ))
+        command_executables.append(exe)
 
-    if ctx.attr.jobs < 0:
-        fail("'jobs' attribute should be at least 0")
-
-    jobs = ctx.attr.jobs
     instructions = struct(
         commands = commands,
-        jobs = jobs,
+        jobs = ctx.attr.jobs,
         print_command = ctx.attr.print_command,
         keep_going = ctx.attr.keep_going,
         buffer_output = ctx.attr.buffer_output,
-        workspace_name = ctx.workspace_name,
+        verbose = ctx.attr.verbose,
     )
+    instructions_file = ctx.actions.declare_file(ctx.label.name + ".json")
     ctx.actions.write(
         output = instructions_file,
         content = json.encode(instructions),
     )
 
-    script = """\
-multirun_script="$(rlocation {})"
-instructions="$(rlocation {})"
-exec "$multirun_script" "$instructions" "$@"
-""".format(shell.quote(rlocation_path(ctx, runner_exe)), shell.quote(rlocation_path(ctx, instructions_file)))
-    out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
-    ctx.actions.write(
-        output = out_file,
-        content = RUNFILES_PREFIX + script,
+    # approach from https://github.com/bazelbuild/bazel-skylib/blob/main/rules/native_binary.bzl
+    runner_link = ctx.actions.declare_file(ctx.label.name + ".exe")
+    ctx.actions.symlink(
+        target_file = ctx.executable._runner,
+        output = runner_link,
         is_executable = True,
     )
+
+    runfiles = ctx.runfiles(files = command_executables + [instructions_file])
+    runfiles = runfiles.merge_all([
+        d[DefaultInfo].default_runfiles
+        for d in ctx.attr.commands + ctx.attr.data + [ctx.attr._runner]
+    ])
+
     return [
         DefaultInfo(
-            files = depset([out_file]),
-            runfiles = runfiles.merge(ctx.runfiles(files = runfiles_files + ctx.files.data)),
-            executable = out_file,
+            files = depset([runner_link]),
+            runfiles = runfiles,
+            executable = runner_link,
         ),
     ]
 
@@ -172,12 +153,16 @@ def multirun_with_transition(cfg, allowlist = None):
             default = False,
             doc = "Buffer the output of the commands and print it after each command has finished. Only for parallel execution.",
         ),
+        "verbose": attr.bool(
+            default = False,
+            doc = "Print some debugging information during the multirun process",
+        ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
         ),
         "_runner": attr.label(
-            default = Label("//internal:multirun"),
-            cfg = "exec",
+            default = Label("//internal/multirun:multirun"),
+            cfg = "target",
             executable = True,
         ),
     }
@@ -185,6 +170,9 @@ def multirun_with_transition(cfg, allowlist = None):
     return rule(
         implementation = _multirun_impl,
         attrs = update_attrs(attrs, cfg, allowlist),
+        toolchains = [
+            "@bazel_tools//tools/sh:toolchain_type",
+        ],
         executable = True,
         doc = """\
 A multirun composes multiple command rules in order to run them in a single
