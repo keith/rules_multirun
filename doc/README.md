@@ -9,6 +9,8 @@ useful for running multiple linters or formatters with a single command.
 ## command
 
 <pre>
+load("@rules_multirun//:defs.bzl", "command")
+
 command(<a href="#command-name">name</a>, <a href="#command-data">data</a>, <a href="#command-arguments">arguments</a>, <a href="#command-command">command</a>, <a href="#command-description">description</a>, <a href="#command-environment">environment</a>)
 </pre>
 
@@ -63,6 +65,8 @@ command(
 ## command_force_opt
 
 <pre>
+load("@rules_multirun//:defs.bzl", "command_force_opt")
+
 command_force_opt(<a href="#command_force_opt-name">name</a>, <a href="#command_force_opt-data">data</a>, <a href="#command_force_opt-arguments">arguments</a>, <a href="#command_force_opt-command">command</a>, <a href="#command_force_opt-description">description</a>, <a href="#command_force_opt-environment">environment</a>)
 </pre>
 
@@ -90,6 +94,8 @@ load("@rules_multirun//:defs.bzl", "multirun", command = "command_force_opt")
 ## multirun
 
 <pre>
+load("@rules_multirun//:defs.bzl", "multirun")
+
 multirun(<a href="#multirun-name">name</a>, <a href="#multirun-data">data</a>, <a href="#multirun-buffer_output">buffer_output</a>, <a href="#multirun-commands">commands</a>, <a href="#multirun-jobs">jobs</a>, <a href="#multirun-keep_going">keep_going</a>, <a href="#multirun-print_command">print_command</a>)
 </pre>
 
@@ -160,6 +166,8 @@ multiple tools.
 ## command_with_transition
 
 <pre>
+load("@rules_multirun//:defs.bzl", "command_with_transition")
+
 command_with_transition(<a href="#command_with_transition-cfg">cfg</a>, <a href="#command_with_transition-allowlist">allowlist</a>, <a href="#command_with_transition-doc">doc</a>)
 </pre>
 
@@ -184,6 +192,8 @@ to apply to all of your commands. See also multirun_with_transition.
 ## multirun_with_transition
 
 <pre>
+load("@rules_multirun//:defs.bzl", "multirun_with_transition")
+
 multirun_with_transition(<a href="#multirun_with_transition-cfg">cfg</a>, <a href="#multirun_with_transition-allowlist">allowlist</a>)
 </pre>
 
