@@ -9,7 +9,7 @@ bazel_dep(name = "rules_python", version = "0.27.1")
 
 bazel_dep(
     name = "stardoc",
-    version = "0.6.2",
+    version = "0.7.1",
     dev_dependency = True,
     repo_name = "io_bazel_stardoc",
 )
