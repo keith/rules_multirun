@@ -63,7 +63,7 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
 
     threads = []
     if forward_stdin:
-        stdin_thread = threading.Thread(target=_forward_stdin, args=(processes))
+        stdin_thread = threading.Thread(target=_forward_stdin, args=(processes,))
         stdin_thread.start()
         threads.append(stdin_thread)
 
