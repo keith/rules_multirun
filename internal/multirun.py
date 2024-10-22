@@ -3,8 +3,9 @@ import os
 import shutil
 import subprocess
 import sys
+import threading
 import platform
-from typing import Dict, List, NamedTuple, Union
+from typing import Dict, List, NamedTuple, Union, Tuple
 
 from python.runfiles import runfiles
 
@@ -34,20 +35,37 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
     else:
         return subprocess.Popen(args, env=env, **kwargs)
 
+def _forward_stdin(procs: List[Tuple[str, subprocess.Popen]]) -> None:
+    while True:
+        line = sys.stdin.readline()
+        if not line:
+            break
+        for proc in procs:
+            proc.stdin.write(line.encode())
+            proc.stdin.flush()
 
-def _perform_concurrently(commands: List[Command], print_command: bool, buffer_output: bool) -> bool:
+def _perform_concurrently(commands: List[Command], print_command: bool, buffer_output: bool, forward_stdin: bool) -> bool:
     kwargs = {}
     if buffer_output:
         kwargs = {
              "stdout" : subprocess.PIPE,
              "stderr" : subprocess.STDOUT
         }
+    
+    if forward_stdin:
+        kwargs["stdin"] = sys.stdin
 
     processes = [
         (command, _run_command(command, block=False, **kwargs))
         for command
         in commands
     ]
+
+    threads = []
+    if forward_stdin:
+        stdin_thread = threading.Thread(target=_forward_stdin, args=(processes))
+        stdin_thread.start()
+        threads.append(stdin_thread)
 
     success = True
     try:
@@ -67,6 +85,9 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
             process.kill()
             process.wait()
         success = False
+    finally:
+        for thread in threads:
+            thread.join()
 
     return success
 
@@ -111,7 +132,7 @@ def _main(instructions_path: str, extra_args: List[str]) -> None:
     parallel = instructions["jobs"] == 0
     print_command: bool = instructions["print_command"]
     if parallel:
-        success = _perform_concurrently(commands, print_command, instructions["buffer_output"])
+        success = _perform_concurrently(commands, print_command, instructions["buffer_output"], instructions["forward_stdin"])
     else:
         success = _perform_serially(commands, print_command, instructions["keep_going"])
 
