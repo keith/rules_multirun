@@ -35,14 +35,16 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
     else:
         return subprocess.Popen(args, env=env, **kwargs)
 
-def _forward_stdin(procs: List[Tuple[str, subprocess.Popen]]) -> None:
-    while True:
-        line = sys.stdin.readline()
+def _forward_stdin(procs: List[Tuple[Command, subprocess.Popen]]) -> None:
+    for line in sys.stdin.readlines():
         if not line:
             break
-        for proc in procs:
+        for (cmd, proc) in procs:
             proc.stdin.write(line.encode())
             proc.stdin.flush()
+    
+    for (cmd, proc) in procs:
+        proc.stdin.close()
 
 def _perform_concurrently(commands: List[Command], print_command: bool, buffer_output: bool, forward_stdin: bool) -> bool:
     kwargs = {}
@@ -53,7 +55,7 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
         }
     
     if forward_stdin:
-        kwargs["stdin"] = sys.stdin
+        kwargs["stdin"] = subprocess.PIPE
 
     processes = [
         (command, _run_command(command, block=False, **kwargs))

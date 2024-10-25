@@ -113,3 +113,12 @@ if [[ "$root_output" != "hello" ]]; then
   echo "Expected 'hello' from root, got '$root_output'"
   exit 1
 fi
+
+script=$(rlocation rules_multirun/tests/multirun_echo_stdin.bash)
+root_output=$( $script <<< "foobar" )
+expectation="From stdin: foobar
+From stdin2: foobar"
+if [[ "$root_output" != "$expectation" ]]; then
+  echo "Expected '$expectation' from root, got '$root_output'"
+  exit 1
+fi
