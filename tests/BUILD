@@ -87,6 +87,17 @@ multirun(
 )
 
 multirun(
+    name = "multirun_parallel_limited_concurrency",
+    commands = [
+        "hello",
+        ":validate_args_cmd",
+        ":validate_env_cmd",
+    ],
+    jobs = 2,
+    print_command = False,
+)
+
+multirun(
     name = "multirun_parallel_no_buffer",
     buffer_output = False,
     commands = [
@@ -206,6 +217,7 @@ sh_test(
         ":multirun_binary_args_location",
         ":multirun_binary_env",
         ":multirun_parallel",
+        ":multirun_parallel_limited_concurrency",
         ":multirun_parallel_no_buffer",
         ":multirun_parallel_with_output",
         ":multirun_serial",
