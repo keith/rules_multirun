@@ -100,6 +100,8 @@ def _multirun_impl(ctx):
 
     if ctx.attr.jobs < 0:
         fail("'jobs' attribute should be at least 0")
+    elif ctx.attr.jobs > 0 and ctx.attr.forward_stdin:
+        fail("'forward_stdin' can only apply to parallel jobs ('jobs' === 0)")
 
     jobs = ctx.attr.jobs
     instructions = struct(
@@ -108,6 +110,7 @@ def _multirun_impl(ctx):
         print_command = ctx.attr.print_command,
         keep_going = ctx.attr.keep_going,
         buffer_output = ctx.attr.buffer_output,
+        forward_stdin = ctx.attr.forward_stdin,
         workspace_name = ctx.workspace_name,
     )
     ctx.actions.write(
@@ -171,6 +174,10 @@ def multirun_with_transition(cfg, allowlist = None):
         "buffer_output": attr.bool(
             default = False,
             doc = "Buffer the output of the commands and print it after each command has finished. Only for parallel execution.",
+        ),
+        "forward_stdin": attr.bool(
+            default = False,
+            doc = "Whether or not to forward stdin",
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
