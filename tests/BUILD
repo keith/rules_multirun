@@ -34,9 +34,9 @@ command(
     command = "echo_and_fail",
 )
 
-sh_binary(
+py_binary(
     name = "echo_stdin",
-    srcs = ["echo_stdin.sh"],
+    srcs = ["echo_stdin.py"],
     visibility = ["//:__subpackages__"],
 )
 
@@ -45,9 +45,9 @@ command(
     command = "echo_stdin",
 )
 
-sh_binary(
+py_binary(
     name = "echo_stdin2",
-    srcs = ["echo_stdin2.sh"],
+    srcs = ["echo_stdin2.py"],
     visibility = ["//:__subpackages__"],
 )
 
