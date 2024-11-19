@@ -67,38 +67,6 @@ multirun(
 )
 
 sh_binary(
-    name = "echo_stdin",
-    srcs = ["echo_stdin.sh"],
-    visibility = ["//:__subpackages__"],
-)
-
-command(
-    name = "echo_stdin_cmd",
-    command = "echo_stdin",
-)
-
-sh_binary(
-    name = "echo_stdin2",
-    srcs = ["echo_stdin2.sh"],
-    visibility = ["//:__subpackages__"],
-)
-
-command(
-    name = "echo_stdin2_cmd",
-    command = "echo_stdin2",
-)
-
-multirun(
-    name = "multirun_echo_stdin",
-    commands = [
-        "echo_stdin_cmd",
-        "echo_stdin2_cmd",
-    ],
-    forward_stdin = True,
-    jobs = 0,
-)
-
-sh_binary(
     name = "validate_args",
     srcs = ["validate-args.sh"],
 )
