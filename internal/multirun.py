@@ -1,8 +1,8 @@
 import json
 import os
+import signal
 import shutil
 import subprocess
-import signal
 import sys
 import threading
 import platform
