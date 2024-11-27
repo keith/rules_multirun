@@ -11,7 +11,7 @@ useful for running multiple linters or formatters with a single command.
 <pre>
 load("@rules_multirun//:defs.bzl", "command")
 
-command(<a href="#command-name">name</a>, <a href="#command-data">data</a>, <a href="#command-arguments">arguments</a>, <a href="#command-command">command</a>, <a href="#command-description">description</a>, <a href="#command-environment">environment</a>)
+command(<a href="#command-name">name</a>, <a href="#command-data">data</a>, <a href="#command-arguments">arguments</a>, <a href="#command-command">command</a>, <a href="#command-description">description</a>, <a href="#command-environment">environment</a>, <a href="#command-run_from_workspace_root">run_from_workspace_root</a>)
 </pre>
 
 A command is a wrapper rule for some other target that can be run like a
@@ -58,6 +58,7 @@ command(
 | <a id="command-command"></a>command |  Target to run   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 | <a id="command-description"></a>description |  A string describing the command printed during multiruns   | String | optional |  `""`  |
 | <a id="command-environment"></a>environment |  Dictionary of environment variables. Subject to $(location) expansion. See https://docs.bazel.build/versions/master/skylark/lib/ctx.html#expand_location   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
+| <a id="command-run_from_workspace_root"></a>run_from_workspace_root |  If true, the command will be run from the workspace root instead of the execution root   | Boolean | optional |  `False`  |
 
 
 <a id="command_force_opt"></a>
@@ -67,7 +68,7 @@ command(
 <pre>
 load("@rules_multirun//:defs.bzl", "command_force_opt")
 
-command_force_opt(<a href="#command_force_opt-name">name</a>, <a href="#command_force_opt-data">data</a>, <a href="#command_force_opt-arguments">arguments</a>, <a href="#command_force_opt-command">command</a>, <a href="#command_force_opt-description">description</a>, <a href="#command_force_opt-environment">environment</a>)
+command_force_opt(<a href="#command_force_opt-name">name</a>, <a href="#command_force_opt-data">data</a>, <a href="#command_force_opt-arguments">arguments</a>, <a href="#command_force_opt-command">command</a>, <a href="#command_force_opt-description">description</a>, <a href="#command_force_opt-environment">environment</a>, <a href="#command_force_opt-run_from_workspace_root">run_from_workspace_root</a>)
 </pre>
 
 A command that forces the compilation mode of the dependent targets to opt. This can be useful if your tools have improved performance if built with optimizations. See the documentation for command for more examples. If you'd like to always use this variation you can import this directly and rename it for convenience like:
@@ -87,6 +88,7 @@ load("@rules_multirun//:defs.bzl", "multirun", command = "command_force_opt")
 | <a id="command_force_opt-command"></a>command |  Target to run   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 | <a id="command_force_opt-description"></a>description |  A string describing the command printed during multiruns   | String | optional |  `""`  |
 | <a id="command_force_opt-environment"></a>environment |  Dictionary of environment variables. Subject to $(location) expansion. See https://docs.bazel.build/versions/master/skylark/lib/ctx.html#expand_location   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
+| <a id="command_force_opt-run_from_workspace_root"></a>run_from_workspace_root |  If true, the command will be run from the workspace root instead of the execution root   | Boolean | optional |  `False`  |
 
 
 <a id="multirun"></a>

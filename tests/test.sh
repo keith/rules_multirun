@@ -123,3 +123,10 @@ for expectation in "${expectations[@]}"; do
     exit 1
   fi
 done
+
+# Fake the 'bazel run' env var for tests
+export BUILD_WORKSPACE_DIRECTORY=/tmp
+script=$(rlocation rules_multirun/tests/default_pwd_cmd.bash)
+$script
+script=$(rlocation rules_multirun/tests/workspace_pwd_cmd.bash)
+$script

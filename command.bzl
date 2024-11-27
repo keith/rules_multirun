@@ -47,12 +47,15 @@ def _command_impl(ctx):
         "%s" % shell.quote(ctx.expand_location(v, targets = expansion_targets))
         for v in ctx.attr.arguments
     ]
+    cd_command = ""
+    if ctx.attr.run_from_workspace_root:
+        cd_command = 'cd "$BUILD_WORKSPACE_DIRECTORY"'
     command_exec = " ".join(["exec $(rlocation %s)" % shell.quote(rlocation_path(ctx, executable))] + str_args + ['"$@"\n'])
 
     out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
     ctx.actions.write(
         output = out_file,
-        content = "\n".join([RUNFILES_PREFIX] + str_env + [command_exec]),
+        content = "\n".join([RUNFILES_PREFIX] + str_env + [cd_command, command_exec]),
         is_executable = True,
     )
 
@@ -105,6 +108,10 @@ def command_with_transition(cfg, allowlist = None, doc = None):
         ),
         "description": attr.string(
             doc = "A string describing the command printed during multiruns",
+        ),
+        "run_from_workspace_root": attr.bool(
+            default = False,
+            doc = "If true, the command will be run from the workspace root instead of the execution root",
         ),
         "_bash_runfiles": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
