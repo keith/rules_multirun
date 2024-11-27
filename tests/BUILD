@@ -227,10 +227,32 @@ multirun(
     print_command = False,
 )
 
+sh_binary(
+    name = "default_pwd",
+    srcs = ["default-pwd.sh"],
+)
+
+command(
+    name = "default_pwd_cmd",
+    command = ":default_pwd",
+)
+
+sh_binary(
+    name = "workspace_pwd",
+    srcs = ["workspace-pwd.sh"],
+)
+
+command(
+    name = "workspace_pwd_cmd",
+    command = ":workspace_pwd",
+    run_from_workspace_root = True,
+)
+
 sh_test(
     name = "test",
     srcs = ["test.sh"],
     data = [
+        ":default_pwd_cmd",
         ":echo_and_fail_cmd",
         ":hello",
         ":hello2",
@@ -251,6 +273,7 @@ sh_test(
         ":validate_args_cmd_description",
         ":validate_chdir_location_cmd",
         ":validate_env_cmd",
+        ":workspace_pwd_cmd",
     ],
     deps = ["@bazel_tools//tools/bash/runfiles"],
 )
