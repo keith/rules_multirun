@@ -1,5 +1,6 @@
 import json
 import os
+import signal
 import shutil
 import subprocess
 import sys
@@ -84,7 +85,7 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
                 success = False
     except KeyboardInterrupt:
         for command, process in processes:
-            process.kill()
+            process.send_signal(signal.SIGINT)
             process.wait()
         success = False
     finally:
