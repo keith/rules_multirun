@@ -24,7 +24,10 @@ def _binary_args_env_aspect_impl(target, ctx):
 
     is_executable = target.files_to_run != None and target.files_to_run.executable != None
     args = getattr(ctx.rule.attr, "args", [])
-    env = getattr(ctx.rule.attr, "env", {})
+    env = dict(getattr(ctx.rule.attr, "env", {}))
+
+    if RunEnvironmentInfo in target:
+        env.update(target[RunEnvironmentInfo].environment)
 
     if is_executable and (args or env):
         expansion_targets = getattr(ctx.rule.attr, "data", [])
