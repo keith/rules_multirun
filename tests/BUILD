@@ -1,4 +1,5 @@
 load("//:defs.bzl", "command", "command_force_opt", "multirun")
+load(":custom_executable.bzl", "custom_executable")
 load(":transitions.bzl", "command_lambda", "multirun_lambda")
 
 sh_binary(
@@ -194,6 +195,15 @@ multirun(
     commands = [":validate_binary_env"],
 )
 
+custom_executable(
+    name = "validate_custom_executable_rule_env",
+)
+
+multirun(
+    name = "multirun_custom_executable_rule_env",
+    commands = [":validate_custom_executable_rule_env"],
+)
+
 platform(
     name = "lambda",
     constraint_values = [
@@ -259,6 +269,7 @@ sh_test(
         ":multirun_binary_args",
         ":multirun_binary_args_location",
         ":multirun_binary_env",
+        ":multirun_custom_executable_rule_env",
         ":multirun_echo_stdin",
         ":multirun_parallel",
         ":multirun_parallel_no_buffer",

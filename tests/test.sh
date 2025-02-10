@@ -38,6 +38,9 @@ $script
 script=$(rlocation rules_multirun/tests/multirun_binary_args_location.bash)
 $script
 
+script=$(rlocation rules_multirun/tests/multirun_custom_executable_rule_env.bash)
+$script
+
 script="$(rlocation rules_multirun/tests/multirun_parallel.bash)"
 parallel_output="$($script)"
 if [[ -n "$parallel_output" ]]; then
