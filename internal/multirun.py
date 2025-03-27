@@ -34,7 +34,7 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
     if block:
         return subprocess.check_call(args, env=env)
     else:
-        return subprocess.Popen(args, env=env, text=True, universal_newlines=True, **kwargs)
+        return subprocess.Popen(args, env=env, **kwargs)
 
 def _forward_stdin(procs: List[Tuple[Command, subprocess.Popen]]) -> None:
     for line in sys.stdin.readlines():
@@ -83,7 +83,7 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
 
             process.wait()
             if stdout:
-                print(stdout.strip(), flush=True)
+                print(stdout.strip().decode(), flush=True)
 
             if process.returncode != 0:
                 success = False
