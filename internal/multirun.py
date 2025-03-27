@@ -34,16 +34,16 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
     if block:
         return subprocess.check_call(args, env=env)
     else:
-        return subprocess.Popen(args, env=env, **kwargs)
+        return subprocess.Popen(args, env=env, universal_newlines=True, bufsize=1, **kwargs)
 
 def _forward_stdin(procs: List[Tuple[Command, subprocess.Popen]]) -> None:
     for line in sys.stdin.readlines():
         if not line:
             break
         for (cmd, proc) in procs:
-            proc.stdin.write(line.encode())
+            proc.stdin.write(line)
             proc.stdin.flush()
-    
+
     for (cmd, proc) in procs:
         proc.stdin.close()
 
@@ -54,7 +54,7 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
              "stdout" : subprocess.PIPE,
              "stderr" : subprocess.STDOUT
         }
-    
+
     if forward_stdin:
         kwargs["stdin"] = subprocess.PIPE
 
@@ -73,13 +73,17 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
     success = True
     try:
         for command, process in processes:
-            process.wait()
             if print_command and buffer_output:
                 print(command.tag, flush=True)
 
-            stdout = process.communicate()[0]
+            stdout = ""
+            if process.stdout:
+                for line in iter(process.stdout.readline, ''):
+                    stdout += line
+
+            process.wait()
             if stdout:
-                print(stdout.decode().strip(), flush=True)
+                print(stdout.strip(), flush=True)
 
             if process.returncode != 0:
                 success = False
