@@ -77,8 +77,9 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
                 print(command.tag, flush=True)
 
             stdout = ""
-            for line in iter(process.stdout.readline, ''):
-                stdout += line
+            if process.stdout:
+                for line in iter(process.stdout.readline, ''):
+                    stdout += line
 
             process.wait()
             if stdout:
