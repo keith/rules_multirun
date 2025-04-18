@@ -22,9 +22,9 @@ class Command(NamedTuple):
 
 def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
     if platform.system() == "Windows":
-        bash = shutil.which("bash.exe")
+        bash = os.environ.get("BAZEL_SH") or shutil.which("bash.exe")
         if not bash:
-            raise SystemExit("error: bash.exe not found in PATH")
+            raise SystemExit("error: bash not found. On Windows, install MSYS2, Git Bash or Cygwin and set BAZEL_SH environment variable.")
 
         args = [bash, "-c", f'{command.path} "$@"', "--"] + command.args
     else:
