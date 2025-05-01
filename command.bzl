@@ -44,7 +44,7 @@ def _command_impl(ctx):
         for k, v in ctx.attr.environment.items()
     ]
     str_args = [
-        "%s" % shell.quote(ctx.expand_location(v, targets = expansion_targets))
+        "%s" % shell.quote(ctx.expand_make_variables("arguments", ctx.expand_location(v, targets = expansion_targets), {}))
         for v in ctx.attr.arguments
     ]
     cd_command = ""
