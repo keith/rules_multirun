@@ -40,7 +40,7 @@ def _command_impl(ctx):
     expansion_targets = ctx.attr.data
 
     str_env = [
-        "export %s=%s" % (k, shell.quote(ctx.expand_location(v, targets = expansion_targets)))
+        "export %s=%s" % (k, shell.quote(ctx.expand_make_variables("environment", ctx.expand_location(v, targets = expansion_targets), {})))
         for k, v in ctx.attr.environment.items()
     ]
     str_args = [
