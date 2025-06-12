@@ -1,3 +1,5 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//:defs.bzl", "command", "command_force_opt", "multirun")
 load(":custom_executable.bzl", "custom_executable")
 load(":transitions.bzl", "command_lambda", "multirun_lambda")
