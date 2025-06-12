@@ -21,6 +21,20 @@ _force_opt = transition(
     outputs = ["//command_line_option:compilation_mode"],
 )
 
+def _expand_and_quote(*, ctx, attr, string, targets):
+    expanded = ctx.expand_make_variables(
+        attr,
+        ctx.expand_location(string, targets = targets),
+        {},
+    )
+
+    # If the user wants to find something with rlocation, don't shell escape,
+    # but still double quote it to solve spaces in file paths
+    if expanded.startswith("$(rlocation "):
+        return "\"{}\"".format(expanded)
+    else:
+        return shell.quote(expanded)
+
 def _command_impl(ctx):
     runfiles = ctx.runfiles().merge(ctx.attr._bash_runfiles[DefaultInfo].default_runfiles)
 
@@ -40,11 +54,19 @@ def _command_impl(ctx):
     expansion_targets = ctx.attr.data
 
     str_env = [
-        "export %s=%s" % (k, shell.quote(ctx.expand_location(v, targets = expansion_targets)))
+        "export %s=%s" % (
+            k,
+            _expand_and_quote(
+                ctx = ctx,
+                attr = "environment",
+                string = v,
+                targets = expansion_targets,
+            ),
+        )
         for k, v in ctx.attr.environment.items()
     ]
     str_args = [
-        "%s" % shell.quote(ctx.expand_location(v, targets = expansion_targets))
+        "%s" % _expand_and_quote(ctx = ctx, attr = "arguments", string = v, targets = expansion_targets)
         for v in ctx.attr.arguments
     ]
     cd_command = ""
