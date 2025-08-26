@@ -187,7 +187,7 @@ def multirun_with_transition(cfg, allowlist = None):
         ),
         "_runner": attr.label(
             default = Label("//internal:multirun"),
-            cfg = "exec",
+            cfg = "target",
             executable = True,
         ),
     }
