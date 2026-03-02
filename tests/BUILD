@@ -202,6 +202,11 @@ custom_executable(
     name = "validate_custom_executable_rule_env",
 )
 
+command(
+    name = "command_custom_executable_rule_env",
+    command = ":validate_custom_executable_rule_env",
+)
+
 multirun(
     name = "multirun_custom_executable_rule_env",
     commands = [":validate_custom_executable_rule_env"],
@@ -265,6 +270,7 @@ sh_test(
     name = "test",
     srcs = ["test.sh"],
     data = [
+        ":command_custom_executable_rule_env",
         ":default_pwd_cmd",
         ":echo_and_fail_cmd",
         ":hello",

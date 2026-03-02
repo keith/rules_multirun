@@ -53,6 +53,11 @@ def _command_impl(ctx):
 
     expansion_targets = ctx.attr.data
 
+    env = {}
+    if RunEnvironmentInfo in command:
+        env.update(command[RunEnvironmentInfo].environment)
+    env.update(ctx.attr.environment)
+
     str_env = [
         "export %s=%s" % (
             k,
@@ -63,7 +68,7 @@ def _command_impl(ctx):
                 targets = expansion_targets,
             ),
         )
-        for k, v in ctx.attr.environment.items()
+        for k, v in env.items()
     ]
     str_args = [
         "%s" % _expand_and_quote(ctx = ctx, attr = "arguments", string = v, targets = expansion_targets)
