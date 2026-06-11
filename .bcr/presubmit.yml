@@ -1,6 +1,6 @@
 matrix:
-  platform: ["macos", "ubuntu2004", "windows"]
-  bazel: ["6.x", "7.x", "rolling"]
+  platform: ["macos", "ubuntu2204", "windows"]
+  bazel: ["6.x", "7.x", "8.x", "9.x", "rolling"]
 
 tasks:
   verify_targets:
