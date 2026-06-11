@@ -36,12 +36,12 @@ def _expand_and_quote(*, ctx, attr, string, targets):
         return shell.quote(expanded)
 
 def _command_impl(ctx):
-    runfiles = ctx.runfiles().merge(ctx.attr._bash_runfiles[DefaultInfo].default_runfiles)
+    transitive_runfiles = [ctx.attr._bash_runfiles[DefaultInfo].default_runfiles]
 
     for data_dep in ctx.attr.data:
         default_runfiles = data_dep[DefaultInfo].default_runfiles
         if default_runfiles != None:
-            runfiles = runfiles.merge(default_runfiles)
+            transitive_runfiles.append(default_runfiles)
 
     command = ctx.attr.command if type(ctx.attr.command) == "Target" else ctx.attr.command[0]
     default_info = command[DefaultInfo]
@@ -49,7 +49,9 @@ def _command_impl(ctx):
 
     default_runfiles = default_info.default_runfiles
     if default_runfiles != None:
-        runfiles = runfiles.merge(default_runfiles)
+        transitive_runfiles.append(default_runfiles)
+
+    runfiles = ctx.runfiles().merge_all(transitive_runfiles)
 
     expansion_targets = ctx.attr.data
 

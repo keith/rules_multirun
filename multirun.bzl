@@ -53,14 +53,15 @@ def _multirun_impl(ctx):
     runner_info = ctx.attr._runner[DefaultInfo]
     runner_exe = runner_info.files_to_run.executable
 
-    runfiles = ctx.runfiles(files = [instructions_file, runner_exe])
-    runfiles = runfiles.merge(ctx.attr._bash_runfiles[DefaultInfo].default_runfiles)
-    runfiles = runfiles.merge(runner_info.default_runfiles)
+    transitive_runfiles = [
+        ctx.attr._bash_runfiles[DefaultInfo].default_runfiles,
+        runner_info.default_runfiles,
+    ]
 
     for data_dep in ctx.attr.data:
         default_runfiles = data_dep[DefaultInfo].default_runfiles
         if default_runfiles != None:
-            runfiles = runfiles.merge(default_runfiles)
+            transitive_runfiles.append(default_runfiles)
 
     commands = []
     tagged_commands = []
@@ -87,7 +88,7 @@ def _multirun_impl(ctx):
 
         default_runfiles = default_info.default_runfiles
         if default_runfiles != None:
-            runfiles = runfiles.merge(default_runfiles)
+            transitive_runfiles.append(default_runfiles)
 
         if CommandInfo in command:
             tag = command[CommandInfo].description
@@ -100,6 +101,8 @@ def _multirun_impl(ctx):
             args = args,
             env = env,
         ))
+
+    runfiles = ctx.runfiles(files = [instructions_file, runner_exe]).merge_all(transitive_runfiles)
 
     if ctx.attr.jobs < 0:
         fail("'jobs' attribute should be at least 0")
