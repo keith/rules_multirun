@@ -12,7 +12,7 @@ jobs:
   macos_test:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: USE_BAZEL_VERSION=6.x bazelisk test //tests/...
       - run: USE_BAZEL_VERSION=7.x bazelisk test //tests/... --enable_bzlmod=false
       - run: USE_BAZEL_VERSION=8.x bazelisk test //tests/...
@@ -24,7 +24,7 @@ jobs:
   ubuntu_test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: USE_BAZEL_VERSION=6.x bazelisk test //tests/...
       - run: USE_BAZEL_VERSION=7.x bazelisk test //tests/... --enable_bzlmod=false
       - run: USE_BAZEL_VERSION=8.x bazelisk test //tests/...
@@ -36,7 +36,7 @@ jobs:
   windows_test:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: bazelisk test //tests/...
       - run: bazelisk test //tests/...
         env:
