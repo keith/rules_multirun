@@ -198,6 +198,22 @@ multirun(
     commands = [":validate_binary_env"],
 )
 
+sh_binary(
+    name = "validate_binary_locations",
+    srcs = ["validate-locations.sh"],
+    args = ["$(rlocationpath :hello)"],
+    data = [
+        ":hello",
+        ":hello2",
+    ],
+    env = {"FOO_ENV": "$(rlocationpath :hello2)"},
+)
+
+multirun(
+    name = "multirun_binary_locations",
+    commands = [":validate_binary_locations"],
+)
+
 custom_executable(
     name = "validate_custom_executable_rule_env",
 )
@@ -278,6 +294,7 @@ sh_test(
         ":multirun_binary_args",
         ":multirun_binary_args_location",
         ":multirun_binary_env",
+        ":multirun_binary_locations",
         ":multirun_custom_executable_rule_env",
         ":multirun_echo_stdin",
         ":multirun_parallel",

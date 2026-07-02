@@ -38,6 +38,9 @@ $script
 script=$(rlocation rules_multirun/tests/multirun_binary_args_location.bash)
 $script
 
+script=$(rlocation rules_multirun/tests/multirun_binary_locations.bash)
+$script
+
 script=$(rlocation rules_multirun/tests/multirun_custom_executable_rule_env.bash)
 $script
 
