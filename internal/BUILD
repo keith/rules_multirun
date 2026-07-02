@@ -12,6 +12,12 @@ py_binary(
 )
 
 bzl_library(
+    name = "binary_args_env",
+    srcs = ["binary_args_env.bzl"],
+    visibility = ["//:__pkg__"],
+)
+
+bzl_library(
     name = "constants",
     srcs = ["constants.bzl"],
     visibility = ["//:__pkg__"],
