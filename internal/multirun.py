@@ -1,6 +1,8 @@
 import json
 import os
+import re
 import signal
+import shlex
 import shutil
 import subprocess
 import sys
@@ -20,13 +22,43 @@ class Command(NamedTuple):
     env: Dict[str, str]
 
 
-def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
-    if platform.system() == "Windows":
-        bash = os.environ.get("BAZEL_SH") or shutil.which("bash.exe")
-        if not bash:
-            raise SystemExit("error: bash not found. On Windows, install MSYS2, Git Bash or Cygwin and set BAZEL_SH environment variable.")
+# Extensions Windows can execute itself. Everything else has to be handed to an
+# interpreter.
+_WINDOWS_EXECUTABLE_EXTENSIONS = (".exe", ".com", ".bat", ".cmd")
 
-        args = [bash, "-c", f'{command.path} "$@"', "--"] + command.args
+
+def _quote_for_windows(arg: str) -> str:
+    """Quote a single argument for a Windows command line.
+
+    Windows has no argv: every process re-parses one command line string.
+    Python's list2cmdline only adds quotes when an argument contains
+    whitespace, but MSYS2 Bash only honours `\\"` escaping inside a quoted
+    argument, so `a"b` would reach the command as `ab`. Always quoting keeps
+    both parsers in agreement.
+    """
+    escaped = re.sub(r'(\\*)"', r'\1\1\\"', arg)
+    escaped = re.sub(r"(\\+)\Z", r"\1\1", escaped)
+    return '"{}"'.format(escaped)
+
+
+def _windows_args(command: Command) -> Union[str, List[str]]:
+    # Skip using bash if command.path is a windows executable
+    if command.path.lower().endswith(_WINDOWS_EXECUTABLE_EXTENSIONS):
+        return [command.path] + command.args
+
+    bash = os.environ.get("BAZEL_SH") or shutil.which("bash.exe")
+    if not bash:
+        raise SystemExit("error: bash not found. On Windows, install MSYS2, Git Bash or Cygwin and set BAZEL_SH environment variable.")
+
+    # Since command.path is an argument to bash it must be quoted to handle spaces and windows backslash paths
+    argv = [bash, "-c", f'{shlex.quote(command.path)} "$@"', "--"] + command.args
+    return " ".join(_quote_for_windows(arg) for arg in argv)
+
+
+def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
+    args: Union[str, List[str]]
+    if platform.system() == "Windows":
+        args = _windows_args(command)
     else:
         args = [command.path] + command.args
     env = dict(os.environ)
