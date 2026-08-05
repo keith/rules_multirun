@@ -143,7 +143,7 @@ exec "$multirun_script" "$instructions" "$@"
         ),
     ]
 
-def multirun_with_transition(cfg, allowlist = None):
+def multirun_with_transition(cfg, allowlist = None, runner_cfg = "target"):
     """Creates a multirun rule which transitions all commands to the given configuration.
 
     This is useful if you have a project-specific configuration that you want
@@ -152,6 +152,7 @@ def multirun_with_transition(cfg, allowlist = None):
     Args:
         cfg: The transition to force on the dependent commands.
         allowlist: The transition allowlist to use for the given cfg. Not necessary in newer bazel versions.
+        runner_cfg: The configuration used for the internal multirun runner executable
     """
     attrs = {
         "commands": attr.label_list(
@@ -190,7 +191,7 @@ def multirun_with_transition(cfg, allowlist = None):
         ),
         "_runner": attr.label(
             default = Label("//internal:multirun"),
-            cfg = "target",
+            cfg = runner_cfg,
             executable = True,
         ),
     }
