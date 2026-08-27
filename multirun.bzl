@@ -6,46 +6,16 @@ in a single invocation.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(
+    "//internal:binary_args_env.bzl",
+    "BinaryArgsEnvInfo",
+    "binary_args_env_aspect",
+)
+load(
     "//internal:constants.bzl",
     "CommandInfo",
     "RUNFILES_PREFIX",
     "rlocation_path",
     "update_attrs",
-)
-
-_BinaryArgsEnvInfo = provider(
-    fields = ["args", "env"],
-    doc = "The arguments and environment to use when running the binary",
-)
-
-def _binary_args_env_aspect_impl(target, ctx):
-    if _BinaryArgsEnvInfo in target:
-        return []
-
-    is_executable = target.files_to_run != None and target.files_to_run.executable != None
-    args = getattr(ctx.rule.attr, "args", [])
-    env = dict(getattr(ctx.rule.attr, "env", {}))
-
-    if RunEnvironmentInfo in target:
-        env.update(target[RunEnvironmentInfo].environment)
-
-    if is_executable and (args or env):
-        expansion_targets = getattr(ctx.rule.attr, "data", [])
-        if expansion_targets:
-            args = [
-                ctx.expand_location(arg, expansion_targets)
-                for arg in args
-            ]
-            env = {
-                name: ctx.expand_location(val, expansion_targets)
-                for name, val in env.items()
-            }
-        return [_BinaryArgsEnvInfo(args = args, env = env)]
-
-    return []
-
-_binary_args_env_aspect = aspect(
-    implementation = _binary_args_env_aspect_impl,
 )
 
 def _multirun_impl(ctx):
@@ -82,9 +52,9 @@ def _multirun_impl(ctx):
 
         args = []
         env = {}
-        if _BinaryArgsEnvInfo in command:
-            args = command[_BinaryArgsEnvInfo].args
-            env = command[_BinaryArgsEnvInfo].env
+        if BinaryArgsEnvInfo in command:
+            args = command[BinaryArgsEnvInfo].args
+            env = command[BinaryArgsEnvInfo].env
 
         default_runfiles = default_info.default_runfiles
         if default_runfiles != None:
@@ -157,7 +127,7 @@ def multirun_with_transition(cfg, allowlist = None):
         "commands": attr.label_list(
             mandatory = False,
             allow_files = True,
-            aspects = [_binary_args_env_aspect],
+            aspects = [binary_args_env_aspect],
             doc = "Targets to run",
             cfg = cfg,
         ),
