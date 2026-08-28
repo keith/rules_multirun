@@ -9,8 +9,12 @@ load(
     "//internal:constants.bzl",
     "CommandInfo",
     "RUNFILES_PREFIX",
+    "SH_TOOLCHAIN_TYPE",
+    "WINDOWS_CONSTRAINT_ATTRS",
+    "is_windows",
     "rlocation_path",
     "update_attrs",
+    "windows_launcher_bat",
 )
 
 _BinaryArgsEnvInfo = provider(
@@ -80,6 +84,17 @@ def _multirun_impl(ctx):
             fail("%s does not have an executable file" % command.label, attr = "commands")
         runfiles_files.append(exe)
 
+        command_info = command[CommandInfo] if CommandInfo in command else None
+
+        # The runner is itself a Bash script, so it can invoke a `command`'s
+        # Bash script directly. On Windows `exe` is a `.bat` launcher whose only
+        # job is to find Bash, which we are already running under.
+        script = getattr(command_info, "bash_script", None) if command_info else None
+        if script:
+            runfiles_files.append(script)
+        else:
+            script = exe
+
         args = []
         env = {}
         if _BinaryArgsEnvInfo in command:
@@ -90,14 +105,14 @@ def _multirun_impl(ctx):
         if default_runfiles != None:
             transitive_runfiles.append(default_runfiles)
 
-        if CommandInfo in command:
-            tag = command[CommandInfo].description
+        if command_info and getattr(command_info, "description", None):
+            tag = command_info.description
         else:
             tag = "Running {}".format(tag_command.tag)
 
         commands.append(struct(
             tag = tag,
-            path = exe.short_path,
+            path = script.short_path,
             args = args,
             env = env,
         ))
@@ -129,17 +144,30 @@ multirun_script="$(rlocation {})"
 instructions="$(rlocation {})"
 exec "$multirun_script" "$instructions" "$@"
 """.format(shell.quote(rlocation_path(ctx, runner_exe)), shell.quote(rlocation_path(ctx, instructions_file)))
-    out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
+    bash_file = ctx.actions.declare_file(ctx.label.name + ".bash")
     ctx.actions.write(
-        output = out_file,
+        output = bash_file,
         content = RUNFILES_PREFIX + script,
         is_executable = True,
     )
+
+    default_files = [bash_file]
+    out_executable = bash_file
+    if is_windows(ctx):
+        bat_file = ctx.actions.declare_file(ctx.label.name + ".bat")
+        ctx.actions.write(
+            output = bat_file,
+            content = windows_launcher_bat(ctx),
+            is_executable = True,
+        )
+        default_files.append(bat_file)
+        out_executable = bat_file
+
     return [
         DefaultInfo(
-            files = depset([out_file]),
-            runfiles = runfiles.merge(ctx.runfiles(files = runfiles_files + ctx.files.data)),
-            executable = out_file,
+            files = depset(default_files),
+            runfiles = runfiles.merge(ctx.runfiles(files = runfiles_files + ctx.files.data + default_files)),
+            executable = out_executable,
         ),
     ]
 
@@ -194,11 +222,13 @@ def multirun_with_transition(cfg, allowlist = None):
             executable = True,
         ),
     }
+    attrs.update(WINDOWS_CONSTRAINT_ATTRS)
 
     return rule(
         implementation = _multirun_impl,
         attrs = update_attrs(attrs, cfg, allowlist),
         executable = True,
+        toolchains = [config_common.toolchain_type(SH_TOOLCHAIN_TYPE, mandatory = False)],
         doc = """\
 A multirun composes multiple command rules in order to run them in a single
 bazel invocation, optionally in parallel. This can have a major performance

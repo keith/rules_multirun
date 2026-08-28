@@ -1,5 +1,16 @@
 common --lockfile_mode=off
 
+common --enable_platform_specific_config
+
+# rules_python 2.0 requires windows symlinks for runfiles
+startup:windows --windows_enable_symlinks
+build:windows --enable_runfiles
+
+# Every command resolves its target with runfiles.bash's rlocation, which spawns
+# ~60 processes per call. That is cheap on Unix but not under MSYS2, where the
+# suite runs an order of magnitude slower than the default timeouts allow.
+test:windows --test_timeout=3600
+
 build --remote_cache=grpcs://remote.buildbuddy.io
 build --remote_timeout=3600
 

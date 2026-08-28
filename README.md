@@ -85,6 +85,26 @@ aws_deploy(
 ```
 
 
+## Windows
+
+`command` and `multirun` targets generate a Bash script, so they need a Bash
+installation such as [MSYS2](https://www.msys2.org) or Git Bash. Windows cannot
+execute a Bash script directly, so on Windows a `.bat` launcher is generated
+alongside it and used as the target's executable. The launcher picks a shell
+from `BAZEL_SH`, the registered `sh` toolchain, or `PATH`, in that order.
+
+Windows also has to be configured to materialize a runfiles tree, because
+`multirun` runs its commands from a nested binary that cannot locate them from
+a runfiles manifest alone:
+
+```
+startup --windows_enable_symlinks
+build --enable_runfiles
+```
+
+Creating symlinks requires Developer Mode to be enabled, or an elevated shell.
+
+
 ## Installation
 
 Go to the [releases
