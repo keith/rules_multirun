@@ -12,7 +12,7 @@ jobs:
   macos_test:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: USE_BAZEL_VERSION=6.x bazelisk test //tests/...
       - run: USE_BAZEL_VERSION=7.x bazelisk test //tests/... --enable_bzlmod=false
       - run: USE_BAZEL_VERSION=8.x bazelisk test //tests/...
@@ -24,7 +24,7 @@ jobs:
   ubuntu_test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: USE_BAZEL_VERSION=6.x bazelisk test //tests/...
       - run: USE_BAZEL_VERSION=7.x bazelisk test //tests/... --enable_bzlmod=false
       - run: USE_BAZEL_VERSION=8.x bazelisk test //tests/...
@@ -35,12 +35,14 @@ jobs:
 
   windows_test:
     runs-on: windows-latest
+    env:
+      BAZEL_SH: C:/Program Files/Git/bin/bash.exe
     steps:
-      - uses: actions/checkout@v7
-      - run: bazelisk test //tests/...
-      - run: bazelisk test //tests/...
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - run: bazelisk test //tests/... //internal:windows_process_test --test_env=BAZEL_SH
+      - run: bazelisk test //tests/... //internal:windows_process_test --test_env=BAZEL_SH
         env:
           USE_BAZEL_VERSION: rolling
-      - run: bazelisk test //tests/...
+      - run: bazelisk test //tests/... //internal:windows_process_test --test_env=BAZEL_SH
         env:
           USE_BAZEL_VERSION: last_green

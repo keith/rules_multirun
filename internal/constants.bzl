@@ -25,6 +25,11 @@ CommandInfo = provider(
     doc = "Information about commands used by their multirun.",
 )
 
+IBazelInfo = provider(
+    fields = ["notify_changes", "notify_changes_v1"],
+    doc = "iBazel capabilities exposed by a command wrapper.",
+)
+
 def update_attrs(attrs, cfg, allowlist):
     """Conditionally update attributes.
 

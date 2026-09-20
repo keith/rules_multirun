@@ -51,6 +51,88 @@ Run the `multirun` target with bazel:
 $ bazel run //:lint
 ```
 
+## Windows
+
+Install Git for Windows or MSYS2 and put `bash.exe` on `PATH`, or set `BAZEL_SH`
+to its absolute path. Windows targets expose a `.bat` entrypoint for `bazel run`.
+Each command runs in a Windows Job Object so stopping or restarting it also
+terminates descendants, including native processes launched through Bash `exec`.
+
+## Usage with iBazel
+
+Set `ibazel_notify_changes` on `multirun` to compose long-lived commands while
+preserving the incremental build protocol used by targets such as
+`js_run_devserver`:
+
+```bzl
+load("@rules_multirun//:defs.bzl", "multirun")
+
+multirun(
+    name = "dev",
+    commands = [
+        ":admin_devserver",
+        ":frontend_devserver",
+    ],
+    ibazel_notify_changes = True,
+)
+```
+
+Run it with `ibazel run //:dev`. Commands tagged `ibazel_notify_changes`
+receive build notifications on stdin and remain alive across rebuilds. Commands
+that cannot consume the protocol can instead use affected-target restarts:
+
+```bzl
+load("@rules_multirun//:defs.bzl", "command", "multirun")
+
+command(
+    name = "backend_dev",
+    command = ":backend",
+)
+
+multirun(
+    name = "dev",
+    commands = [
+        ":frontend_devserver",
+        ":backend_dev",
+    ],
+    ibazel_notify_changes = True,
+    ibazel_restart_affected_commands = True,
+)
+```
+
+After each successful structured build event, `multirun` restarts only commands
+whose Bazel labels iBazel reports as affected. The initial build does not restart
+commands. If iBazel cannot completely attribute a change, `multirun` safely
+restarts every non-notification command. No path routing is configured in the
+BUILD file.
+
+Set `ibazel_defer_non_notification_commands` when user-visible commands must not
+start before iBazel finishes its initial watch-discovery catch-up build:
+
+```bzl
+multirun(
+    name = "dev",
+    commands = [
+        ":frontend_devserver",
+        ":backend_dev",
+        ":desktop_app",
+    ],
+    ibazel_defer_non_notification_commands = True,
+    ibazel_notify_changes = True,
+    ibazel_restart_affected_commands = True,
+)
+```
+
+Notification-capable commands start immediately. Other commands start after the
+first successful structured build event, so an initial live reload can finish
+before a desktop app or browser becomes visible. Failed initial builds keep the
+deferred commands stopped.
+
+Commands that only advertise `ibazel_notify_changes` receive the legacy
+protocol. Commands that advertise `ibazel_notify_changes_v1` additionally
+receive structured `IBAZEL_EVENT` messages containing changed files. Selective
+restarts require structured version 1 events with affected-target attribution.
+
 See [the full API docs](doc) for more info.
 
 ## Usage with platform transitions
