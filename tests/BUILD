@@ -142,6 +142,20 @@ multirun(
     jobs = 0,
 )
 
+sh_binary(
+    name = "echo_and_sleep",
+    srcs = ["echo_and_sleep.sh"],
+)
+
+multirun(
+    name = "multirun_parallel_interrupted",
+    commands = [
+        ":echo_hello",
+        ":echo_and_sleep",
+    ],
+    jobs = 0,
+)
+
 multirun(
     name = "multirun_serial",
     commands = [
@@ -299,6 +313,7 @@ sh_test(
         ":multirun_echo_stdin",
         ":multirun_parallel",
         ":multirun_parallel_no_buffer",
+        ":multirun_parallel_interrupted",
         ":multirun_parallel_with_output",
         ":multirun_serial",
         ":multirun_serial_description",

@@ -74,7 +74,10 @@ def _forward_stdin(runs: List[CommandRun]) -> None:
 def _print_durations(runs: List[CommandRun]) -> None:
     print("Command durations:", file=sys.stderr)
     for run in sorted(runs, key=lambda run: run.duration, reverse=True):
-        print(f"  {run.duration:8.2f}s  {run.command.tag}", file=sys.stderr)
+        try:
+            print(f"  {run.duration:8.2f}s  {run.command.tag}", file=sys.stderr)
+        except ValueError:
+            print(f"  N/A        {run.command.tag}", file=sys.stderr)
     sys.stderr.flush()
 
 def _perform_concurrently(commands: List[Command], print_command: bool, buffer_output: bool, forward_stdin: bool) -> bool:
@@ -118,11 +121,6 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
 
             if run.process.returncode != 0:
                 success = False
-
-        if print_command:
-            for thread in exit_threads:
-                thread.join()
-            _print_durations(runs)
     except KeyboardInterrupt:
         for run in runs:
             run.process.send_signal(signal.SIGINT)
@@ -131,6 +129,8 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
     finally:
         for thread in threads:
             thread.join()
+        if print_command:
+            _print_durations(runs)
 
     return success
 
