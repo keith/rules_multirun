@@ -1,2 +1,4 @@
 /bazel-*
 /MODULE.bazel.lock
+
+__pycache__
