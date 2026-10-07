@@ -114,6 +114,7 @@ def _multirun_impl(ctx):
         commands = commands,
         jobs = jobs,
         print_command = ctx.attr.print_command,
+        print_timings = ctx.attr.print_timings,
         keep_going = ctx.attr.keep_going,
         buffer_output = ctx.attr.buffer_output,
         forward_stdin = ctx.attr.forward_stdin,
@@ -172,6 +173,10 @@ def multirun_with_transition(cfg, allowlist = None):
         "print_command": attr.bool(
             default = True,
             doc = "Print what command is being run before running it.",
+        ),
+        "print_timings": attr.bool(
+            default = False,
+            doc = "Print how long each command took to stderr after all commands have finished, or after an interrupt.",
         ),
         "keep_going": attr.bool(
             default = False,

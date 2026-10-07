@@ -98,7 +98,7 @@ load("@rules_multirun//:defs.bzl", "multirun", command = "command_force_opt")
 <pre>
 load("@rules_multirun//:defs.bzl", "multirun")
 
-multirun(<a href="#multirun-name">name</a>, <a href="#multirun-data">data</a>, <a href="#multirun-buffer_output">buffer_output</a>, <a href="#multirun-commands">commands</a>, <a href="#multirun-forward_stdin">forward_stdin</a>, <a href="#multirun-jobs">jobs</a>, <a href="#multirun-keep_going">keep_going</a>, <a href="#multirun-print_command">print_command</a>)
+multirun(<a href="#multirun-name">name</a>, <a href="#multirun-data">data</a>, <a href="#multirun-buffer_output">buffer_output</a>, <a href="#multirun-commands">commands</a>, <a href="#multirun-forward_stdin">forward_stdin</a>, <a href="#multirun-jobs">jobs</a>, <a href="#multirun-keep_going">keep_going</a>, <a href="#multirun-print_command">print_command</a>, <a href="#multirun-print_timings">print_timings</a>)
 </pre>
 
 A multirun composes multiple command rules in order to run them in a single
@@ -162,6 +162,7 @@ multiple tools.
 | <a id="multirun-jobs"></a>jobs |  The expected concurrency of targets to be executed. Default is set to 1 which means sequential execution. Setting to 0 means that there is no limit concurrency.   | Integer | optional |  `1`  |
 | <a id="multirun-keep_going"></a>keep_going |  Keep going after a command fails. Only for sequential execution.   | Boolean | optional |  `False`  |
 | <a id="multirun-print_command"></a>print_command |  Print what command is being run before running it.   | Boolean | optional |  `True`  |
+| <a id="multirun-print_timings"></a>print_timings |  Print how long each command took to stderr after all commands have finished, or after an interrupt.   | Boolean | optional |  `False`  |
 
 
 <a id="command_with_transition"></a>

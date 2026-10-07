@@ -154,6 +154,7 @@ multirun(
         ":echo_and_sleep",
     ],
     jobs = 0,
+    print_timings = True,
 )
 
 multirun(

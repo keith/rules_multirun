@@ -80,7 +80,7 @@ def _print_durations(runs: List[CommandRun]) -> None:
             print(f"  N/A        {run.command.tag}", file=sys.stderr)
     sys.stderr.flush()
 
-def _perform_concurrently(commands: List[Command], print_command: bool, buffer_output: bool, forward_stdin: bool) -> bool:
+def _perform_concurrently(commands: List[Command], print_command: bool, print_timings: bool, buffer_output: bool, forward_stdin: bool) -> bool:
     kwargs = {}
     if buffer_output:
         kwargs = {
@@ -129,13 +129,13 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
     finally:
         for thread in threads:
             thread.join()
-        if print_command:
+        if print_timings:
             _print_durations(runs)
 
     return success
 
 
-def _perform_serially(commands: List[Command], print_command: bool, keep_going: bool) -> bool:
+def _perform_serially(commands: List[Command], print_command: bool, print_timings: bool, keep_going: bool) -> bool:
     runs = []
     success = True
     for command in commands:
@@ -156,7 +156,7 @@ def _perform_serially(commands: List[Command], print_command: bool, keep_going: 
             if not keep_going:
                 break
 
-    if print_command:
+    if print_timings:
         _print_durations(runs)
 
     return success
@@ -182,10 +182,11 @@ def _main(instructions_path: str, extra_args: List[str]) -> None:
     ]
     parallel = instructions["jobs"] == 0
     print_command: bool = instructions["print_command"]
+    print_timings: bool = instructions["print_timings"]
     if parallel:
-        success = _perform_concurrently(commands, print_command, instructions["buffer_output"], instructions["forward_stdin"])
+        success = _perform_concurrently(commands, print_command, print_timings, instructions["buffer_output"], instructions["forward_stdin"])
     else:
-        success = _perform_serially(commands, print_command, instructions["keep_going"])
+        success = _perform_serially(commands, print_command, print_timings, instructions["keep_going"])
 
     sys.exit(0 if success else 1)
 
