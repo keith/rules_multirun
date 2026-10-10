@@ -5,8 +5,10 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 import platform
-from typing import Dict, List, NamedTuple, Union, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, NamedTuple, Optional
 
 from python.runfiles import runfiles
 
@@ -20,7 +22,31 @@ class Command(NamedTuple):
     env: Dict[str, str]
 
 
-def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subprocess.Popen]:
+@dataclass
+class CommandRun:
+    command: Command
+    process: subprocess.Popen
+    start_time: float
+    end_time: Optional[float] = None
+
+    @classmethod
+    def start(cls, command: Command, **kwargs) -> "CommandRun":
+        start_time = time.monotonic()
+        return cls(command, _run_command(command, **kwargs), start_time)
+
+    def wait_for_exit(self) -> None:
+        self.process.wait()
+        self.end_time = time.monotonic()
+
+    @property
+    def duration(self) -> float:
+        if self.end_time:
+            return self.end_time - self.start_time
+        else:
+            raise ValueError("end_time has not been set, wait for the command to finish")
+
+
+def _run_command(command: Command, **kwargs) -> subprocess.Popen:
     if platform.system() == "Windows":
         bash = os.environ.get("BAZEL_SH") or shutil.which("bash.exe")
         if not bash:
@@ -31,23 +57,30 @@ def _run_command(command: Command, block: bool, **kwargs) -> Union[int, subproce
         args = [command.path] + command.args
     env = dict(os.environ)
     env.update(command.env)
-    if block:
-        return subprocess.check_call(args, env=env)
-    else:
-        return subprocess.Popen(args, env=env, universal_newlines=True, bufsize=1, **kwargs)
+    return subprocess.Popen(args, env=env, universal_newlines=True, bufsize=1, **kwargs)
 
-def _forward_stdin(procs: List[Tuple[Command, subprocess.Popen]]) -> None:
+def _forward_stdin(runs: List[CommandRun]) -> None:
+    runs_with_stdin = [r for r in runs if r.process.stdin is not None]
     for line in sys.stdin.readlines():
         if not line:
             break
-        for (cmd, proc) in procs:
-            proc.stdin.write(line)
-            proc.stdin.flush()
+        for run in runs_with_stdin:
+            run.process.stdin.write(line)
+            run.process.stdin.flush()
 
-    for (cmd, proc) in procs:
-        proc.stdin.close()
+    for run in runs_with_stdin:
+        run.process.stdin.close()
 
-def _perform_concurrently(commands: List[Command], print_command: bool, buffer_output: bool, forward_stdin: bool) -> bool:
+def _print_durations(runs: List[CommandRun]) -> None:
+    print("Command durations:", file=sys.stderr)
+    for run in sorted(runs, key=lambda run: run.duration, reverse=True):
+        try:
+            print(f"  {run.duration:8.2f}s  {run.command.tag}", file=sys.stderr)
+        except ValueError:
+            print(f"  N/A        {run.command.tag}", file=sys.stderr)
+    sys.stderr.flush()
+
+def _perform_concurrently(commands: List[Command], print_command: bool, print_timings: bool, buffer_output: bool, forward_stdin: bool) -> bool:
     kwargs = {}
     if buffer_output:
         kwargs = {
@@ -58,62 +91,73 @@ def _perform_concurrently(commands: List[Command], print_command: bool, buffer_o
     if forward_stdin:
         kwargs["stdin"] = subprocess.PIPE
 
-    processes = [
-        (command, _run_command(command, block=False, **kwargs))
-        for command
-        in commands
-    ]
+    runs = [CommandRun.start(command, **kwargs) for command in commands]
 
-    threads = []
+    exit_threads = [threading.Thread(target=run.wait_for_exit) for run in runs]
+    for thread in exit_threads:
+        thread.start()
+
+    threads = list(exit_threads)
+
     if forward_stdin:
-        stdin_thread = threading.Thread(target=_forward_stdin, args=(processes,))
+        stdin_thread = threading.Thread(target=_forward_stdin, args=(runs,))
         stdin_thread.start()
         threads.append(stdin_thread)
 
     success = True
     try:
-        for command, process in processes:
+        for run in runs:
             if print_command and buffer_output:
-                print(command.tag, flush=True)
+                print(run.command.tag, flush=True)
 
             stdout = ""
-            if process.stdout:
-                for line in iter(process.stdout.readline, ''):
+            if run.process.stdout:
+                for line in iter(run.process.stdout.readline, ''):
                     stdout += line
 
-            process.wait()
+            run.process.wait()
             if stdout:
                 print(stdout.strip(), flush=True)
 
-            if process.returncode != 0:
+            if run.process.returncode != 0:
                 success = False
     except KeyboardInterrupt:
-        for command, process in processes:
-            process.send_signal(signal.SIGINT)
-            process.wait()
+        for run in runs:
+            run.process.send_signal(signal.SIGINT)
+            run.process.wait()
         success = False
     finally:
         for thread in threads:
             thread.join()
+        if print_timings:
+            _print_durations(runs)
 
     return success
 
 
-def _perform_serially(commands: List[Command], print_command: bool, keep_going: bool) -> bool:
+def _perform_serially(commands: List[Command], print_command: bool, print_timings: bool, keep_going: bool) -> bool:
+    runs = []
     success = True
     for command in commands:
         if print_command:
             print(command.tag, flush=True)
 
+        run = CommandRun.start(command)
+        runs.append(run)
         try:
-            _run_command(command, block=True)
-        except subprocess.CalledProcessError:
-            if keep_going:
-                success = False
-            else:
-                return False
+            run.wait_for_exit()
         except KeyboardInterrupt:
+            run.process.kill()
+            run.process.wait()
             return False
+
+        if run.process.returncode != 0:
+            success = False
+            if not keep_going:
+                break
+
+    if print_timings:
+        _print_durations(runs)
 
     return success
 
@@ -138,10 +182,11 @@ def _main(instructions_path: str, extra_args: List[str]) -> None:
     ]
     parallel = instructions["jobs"] == 0
     print_command: bool = instructions["print_command"]
+    print_timings: bool = instructions["print_timings"]
     if parallel:
-        success = _perform_concurrently(commands, print_command, instructions["buffer_output"], instructions["forward_stdin"])
+        success = _perform_concurrently(commands, print_command, print_timings, instructions["buffer_output"], instructions["forward_stdin"])
     else:
-        success = _perform_serially(commands, print_command, instructions["keep_going"])
+        success = _perform_serially(commands, print_command, print_timings, instructions["keep_going"])
 
     sys.exit(0 if success else 1)
 

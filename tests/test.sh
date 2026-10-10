@@ -71,6 +71,38 @@ hello2" ]]; then
   exit 1
 fi
 
+script="$(rlocation rules_multirun/tests/multirun_parallel_interrupted.bash)"
+stdout_file="$TEST_TMPDIR/interrupted_stdout"
+stderr_file="$TEST_TMPDIR/interrupted_stderr"
+# Job control runs the background job in its own process group with SIGINT
+# not ignored, so signaling the group behaves like Ctrl-C in a terminal
+set -m
+"$script" > "$stdout_file" 2> "$stderr_file" &
+interrupted_pid=$!
+set +m
+for _ in $(seq 100); do
+  if grep -q "started" "$stdout_file"; then
+    break
+  fi
+  sleep 0.1
+done
+# Give the runner time to finish launching commands before interrupting it
+sleep 0.5
+kill -INT -- "-$interrupted_pid"
+if wait "$interrupted_pid"; then
+  echo "Expected interrupted multirun to fail"
+  exit 1
+fi
+
+interrupted_stderr=$(sed 's=@[^/]*/=@/=g' "$stderr_file")
+expectations=("Command durations:" "Running @//tests:echo_hello" "Running @//tests:echo_and_sleep")
+for expectation in "${expectations[@]}"; do
+  if [[ "$interrupted_stderr" != *"${expectation}"* ]]; then
+    echo "Expected '${expectation}' in stderr of interrupted multirun, got '$interrupted_stderr'"
+    exit 1
+  fi
+done
+
 script=$(rlocation rules_multirun/tests/multirun_serial.bash)
 serial_output=$($script | sed 's=@[^/]*/=@/=g')
 if [[ "$serial_output" != "Running @//tests:validate_args_cmd
