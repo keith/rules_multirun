@@ -187,6 +187,11 @@ multirun(
     commands = [":validate_binary_args"],
 )
 
+command(
+    name = "command_binary_args",
+    command = ":validate_binary_args",
+)
+
 sh_binary(
     name = "validate_binary_env",
     srcs = ["validate-env.sh"],
@@ -196,6 +201,11 @@ sh_binary(
 multirun(
     name = "multirun_binary_env",
     commands = [":validate_binary_env"],
+)
+
+command(
+    name = "command_binary_env",
+    command = ":validate_binary_env",
 )
 
 sh_binary(
@@ -212,6 +222,11 @@ sh_binary(
 multirun(
     name = "multirun_binary_locations",
     commands = [":validate_binary_locations"],
+)
+
+command(
+    name = "command_binary_locations",
+    command = ":validate_binary_locations",
 )
 
 custom_executable(
@@ -286,6 +301,9 @@ sh_test(
     name = "test",
     srcs = ["test.sh"],
     data = [
+        ":command_binary_args",
+        ":command_binary_env",
+        ":command_binary_locations",
         ":command_custom_executable_rule_env",
         ":default_pwd_cmd",
         ":echo_and_fail_cmd",

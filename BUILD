@@ -27,6 +27,7 @@ bzl_library(
     srcs = ["multirun.bzl"],
     visibility = ["//visibility:public"],
     deps = [
+        "//internal:binary_args_env",
         "//internal:constants",
         "@bazel_skylib//lib:shell",
     ],
@@ -37,6 +38,7 @@ bzl_library(
     srcs = ["command.bzl"],
     visibility = ["//visibility:public"],
     deps = [
+        "//internal:binary_args_env",
         "//internal:constants",
         "@bazel_skylib//lib:shell",
     ],

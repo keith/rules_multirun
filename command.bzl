@@ -5,6 +5,11 @@ multirun definition
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(
+    "//internal:binary_args_env.bzl",
+    "BinaryArgsEnvInfo",
+    "binary_args_env_aspect",
+)
+load(
     "//internal:constants.bzl",
     "CommandInfo",
     "RUNFILES_PREFIX",
@@ -27,13 +32,15 @@ def _expand_and_quote(*, ctx, attr, string, targets):
         ctx.expand_location(string, targets = targets),
         {},
     )
+    return _quote(expanded)
 
+def _quote(string):
     # If the user wants to find something with rlocation, don't shell escape,
     # but still double quote it to solve spaces in file paths
-    if expanded.startswith("$(rlocation "):
-        return "\"{}\"".format(expanded)
+    if string.startswith("$(rlocation "):
+        return "\"{}\"".format(string)
     else:
-        return shell.quote(expanded)
+        return shell.quote(string)
 
 def _command_impl(ctx):
     transitive_runfiles = [ctx.attr._bash_runfiles[DefaultInfo].default_runfiles]
@@ -55,12 +62,23 @@ def _command_impl(ctx):
 
     expansion_targets = ctx.attr.data
 
+    processed_args = []
+    processed_env = {}
     env = {}
-    if RunEnvironmentInfo in command:
+    if BinaryArgsEnvInfo in command:
+        processed_args = command[BinaryArgsEnvInfo].args
+        processed_env.update(command[BinaryArgsEnvInfo].env)
+    elif RunEnvironmentInfo in command:
         env.update(command[RunEnvironmentInfo].environment)
     env.update(ctx.attr.environment)
 
     str_env = [
+        "export %s=%s" % (
+            k,
+            _quote(v),
+        )
+        for k, v in processed_env.items()
+    ] + [
         "export %s=%s" % (
             k,
             _expand_and_quote(
@@ -73,6 +91,9 @@ def _command_impl(ctx):
         for k, v in env.items()
     ]
     str_args = [
+        "%s" % _quote(v)
+        for v in processed_args
+    ] + [
         "%s" % _expand_and_quote(ctx = ctx, attr = "arguments", string = v, targets = expansion_targets)
         for v in ctx.attr.arguments
     ]
@@ -119,7 +140,7 @@ def command_with_transition(cfg, allowlist = None, doc = None):
 
     attrs = {
         "arguments": attr.string_list(
-            doc = "List of command line arguments. Subject to [`$(location)` expansion](https://docs.bazel.build/versions/master/skylark/lib/ctx.html#expand_location). Note that `args` defined on the target of the command aren't available to starlark code so may need to be duplicated here; see [#77](https://github.com/keith/rules_multirun/issues/77).",
+            doc = "List of command line arguments appended after args discovered on the target of the command and before runtime args. Subject to [`$(location)` expansion](https://docs.bazel.build/versions/master/skylark/lib/ctx.html#expand_location).",
         ),
         "data": attr.label_list(
             doc = "The list of files needed by this command at runtime. See general comments about `data` in Bazel's [typical attributes](https://bazel.build/reference/be/common-definitions#typical-attributes) docs.",
@@ -131,6 +152,7 @@ def command_with_transition(cfg, allowlist = None, doc = None):
         "command": attr.label(
             mandatory = True,
             allow_files = True,
+            aspects = [binary_args_env_aspect],
             executable = True,
             doc = "Target to run",
             cfg = cfg,
