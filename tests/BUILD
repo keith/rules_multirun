@@ -314,3 +314,32 @@ sh_test(
     ],
     deps = ["@bazel_tools//tools/bash/runfiles"],
 )
+
+sh_binary(
+    name = "echo_args",
+    srcs = ["echo_args.sh"],
+)
+
+command(
+    name = "echo_args_cmd",
+    command = "echo_args",
+)
+
+multirun(
+    name = "echo_args_multirun",
+    commands = [":echo_args_cmd"],
+    print_command = False,
+)
+
+sh_test(
+    name = "windows_launcher_test",
+    srcs = ["windows_launcher_test.sh"],
+    data = [
+        ":echo_and_fail_cmd",
+        ":echo_args_cmd",
+        ":echo_args_multirun",
+        ":hello",
+        ":multirun_serial",
+    ],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+)

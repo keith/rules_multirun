@@ -8,8 +8,12 @@ load(
     "//internal:constants.bzl",
     "CommandInfo",
     "RUNFILES_PREFIX",
+    "SH_TOOLCHAIN_TYPE",
+    "WINDOWS_CONSTRAINT_ATTRS",
+    "is_windows",
     "rlocation_path",
     "update_attrs",
+    "windows_launcher_bat",
 )
 
 def _force_opt_impl(_settings, _attr):
@@ -81,27 +85,36 @@ def _command_impl(ctx):
         cd_command = 'cd "$BUILD_WORKSPACE_DIRECTORY"'
     command_exec = " ".join(["exec $(rlocation %s)" % shell.quote(rlocation_path(ctx, executable))] + str_args + ['"$@"\n'])
 
-    out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
+    bash_file = ctx.actions.declare_file(ctx.label.name + ".bash")
     ctx.actions.write(
-        output = out_file,
+        output = bash_file,
         content = "\n".join([RUNFILES_PREFIX] + str_env + [cd_command, command_exec]),
         is_executable = True,
     )
 
+    default_files = [bash_file]
+    out_executable = bash_file
+    if is_windows(ctx):
+        bat_file = ctx.actions.declare_file(ctx.label.name + ".bat")
+        ctx.actions.write(
+            output = bat_file,
+            content = windows_launcher_bat(ctx),
+            is_executable = True,
+        )
+        default_files.append(bat_file)
+        out_executable = bat_file
+
     providers = [
         DefaultInfo(
-            files = depset([out_file]),
-            runfiles = runfiles.merge(ctx.runfiles(files = ctx.files.data + [executable])),
-            executable = out_file,
+            files = depset(default_files),
+            runfiles = runfiles.merge(ctx.runfiles(files = ctx.files.data + [executable] + default_files)),
+            executable = out_executable,
+        ),
+        CommandInfo(
+            description = ctx.attr.description,
+            bash_script = bash_file,
         ),
     ]
-
-    if ctx.attr.description:
-        providers.append(
-            CommandInfo(
-                description = ctx.attr.description,
-            ),
-        )
 
     return providers
 
@@ -146,11 +159,13 @@ def command_with_transition(cfg, allowlist = None, doc = None):
             default = Label("@bazel_tools//tools/bash/runfiles"),
         ),
     }
+    attrs.update(WINDOWS_CONSTRAINT_ATTRS)
 
     return rule(
         implementation = _command_impl,
         attrs = update_attrs(attrs, cfg, allowlist),
         executable = True,
+        toolchains = [config_common.toolchain_type(SH_TOOLCHAIN_TYPE, mandatory = False)],
         doc = doc or """\
 A command is a wrapper rule for some other target that can be run like a
 command line tool. You can customize the command to run with specific arguments
